@@ -1,8 +1,9 @@
 import { Input } from './Input.js';
 import { ParticleManager } from './ParticleManager.js';
 import { Player, renderizarGeometriaGota, renderizarChapeuGenerico } from '../entities/Player.js';
-import { World, MUNDO_ABERTO_WIDTH } from '../world/World.js';
+import { World, MEU_JARDIM_WIDTH, MEU_JARDIM_HEIGHT, MUNDO_ABERTO_WIDTH, MUNDO_ABERTO_HEIGHT } from '../world/World.js';
 import { estruturasPadrao } from '../entities/Structure.js';
+import { obterSpriteTintada } from '../constants.js';
 
 export class Game {
     constructor(canvasId) {
@@ -21,65 +22,76 @@ export class Game {
         };
 
         this.particleManager = new ParticleManager(this.canvas.width, this.canvas.height);
-        this.player = new Player(640, 480);
+        this.player = new Player(1200, 1200); // Start centered in the expanded Patio
         this.world = new World();
 
         this.mapaAtual = "meu_jardim";
+        
+        // Reposition structures in the expanded patio (2400 x 1800)
         this.estruturas = estruturasPadrao;
+        this.estruturas.forEach(est => {
+            if (est.id === "customizadora") {
+                est.x = 900;
+                est.y = 1000;
+            } else if (est.id === "mesaSolar") {
+                est.x = 1500;
+                est.y = 1000;
+            }
+        });
 
-        // Camera for scrolling world
-        this.camera = { x: 0, y: 0 };
+        // Camera for scrolling world in both dimensions
+        this.camera = { x: 1200 - this.canvas.width / 2, y: 1200 - this.canvas.height * 0.6 };
 
         this.tempoAnimacao = 0;
         this.anguloBalanco = 0;
         this.uiManager = null;
 
-        // NPCs spread across mundo_aberto (4000px world)
+        // NPCs spread across mundo_aberto (5000px width x 3000px height world)
         this.npcs = [
             {
-                id: "b7", set: "cogumelo", x: 968, y: 438,
+                id: "b7", set: "cogumelo", x: 1400, y: 1000,
                 cor: "#c44b2e", chapeu: "cogumelo", morfologia: "gorda",
                 nome: "Jabuli Cogumelo", atividade: "cogumelo",
                 desc: "Cogumelo habita o coração do bosque encantado. Dizem que ela consegue ouvir os esporos viajarem pelo vento e decifrar suas mensagens.",
                 textoFala: "", timerFala: 0
             },
             {
-                id: "b1", set: "serrano", x: 250, y: 440,
+                id: "b1", set: "serrano", x: 600, y: 1100,
                 cor: "#8338ec", chapeu: "gardachuva", morfologia: "longa",
                 nome: "Jabuli Serrano", atividade: "serrano",
                 desc: "Serrano cultiva tomates orgânicos na horta comunitária. Ele acredita que toda comida deve ser cultivada com amor e respeito pela terra.",
                 textoFala: "", timerFala: 0
             },
             {
-                id: "b2", set: "maracatu", x: 820, y: 440,
+                id: "b2", set: "maracatu", x: 1520, y: 1050,
                 cor: "#ff006e", chapeu: "caboclo", morfologia: "gorda",
                 nome: "Gota Maracatu", atividade: "maracatu",
                 desc: "Maracatu toca tambores no bosque dos cogumelos. O ritmo mágico faz os cogumelos brilharem!",
                 textoFala: "", timerFala: 0, dirBounce: 1
             },
             {
-                id: "b3", set: "devo", x: 1450, y: 455,
+                id: "b3", set: "devo", x: 2000, y: 1450,
                 cor: "#e76f51", chapeu: "devo", morfologia: "normal",
                 nome: "Jabuli Devo", atividade: "devo", dir: 1,
                 desc: "Devo contempla a cachoeira enquanto coleta energia solar residual. Ela diz que a água é o computador da natureza.",
                 textoFala: "", timerFala: 0
             },
             {
-                id: "b4", set: "frank", x: 2100, y: 580,
+                id: "b4", set: "frank", x: 2700, y: 1500,
                 cor: "#5a4a42", chapeu: "darko", morfologia: "longa",
                 nome: "Máscara Frank", atividade: "frank", noLago: true,
-                desc: "Frank mergulha no Grande Lago todas as manhãs. Ele diz que os peixes lhe contam segredos do mundo subaquático.",
+                desc: "Frank mergulha no Grande Lago todas as manhãs. He says the fish tell him secrets of the underwater world.",
                 textoFala: "", timerFala: 0
             },
             {
-                id: "b5", set: "colombina", x: 2720, y: 448,
+                id: "b5", set: "colombina", x: 3750, y: 1600,
                 cor: "#ffffff", chapeu: "colombina", morfologia: "normal",
                 nome: "Colombina da Sombra", atividade: "colombina",
                 desc: "Colombina performa ao redor da fogueira do mercado, contando histórias para qualquer Jabuli que queira ouvir.",
                 textoFala: "", timerFala: 0
             },
             {
-                id: "b6", set: "ziggy", x: 3700, y: 388,
+                id: "b6", set: "ziggy", x: 4500, y: 900,
                 cor: "#ff5500", chapeu: "bowie", morfologia: "gorda",
                 nome: "Ziggy Star", atividade: "ziggy", angulo: 0,
                 desc: "Ziggy usa o Observatório para mapear constelações. Cada estrela tem um nome dado por ela mesma.",
@@ -94,14 +106,32 @@ export class Game {
         this.uiManager = uiManager;
     }
 
-    // World width depending on current map
-    getWorldWidth() {
-        return this.mapaAtual === "mundo_aberto" ? MUNDO_ABERTO_WIDTH : this.canvas.width;
+    projetarCoordenadas(x, y) {
+        const camX = this.camera.x + this.canvas.width / 2;
+        const camY = this.camera.y + this.canvas.height * 0.6;
+        
+        const dx = x - camX;
+        const dy = y - camY;
+        
+        const focalLength = 600;
+        const perspectiveIntensity = 0.55;
+        const tiltFactor = 0.55;
+        
+        const divisor = focalLength - dy * perspectiveIntensity;
+        const scale = divisor > 100 ? focalLength / divisor : 6.0;
+        
+        const screenX = this.canvas.width / 2 + dx * scale;
+        const screenY = this.canvas.height * 0.6 + dy * scale * tiltFactor;
+        
+        return { x: screenX, y: screenY, scale: scale };
     }
 
-    // Convert screen X to world X accounting for camera
-    screenToWorldX(sx) {
-        return sx + this.camera.x;
+    getWorldWidth() {
+        return this.mapaAtual === "mundo_aberto" ? MUNDO_ABERTO_WIDTH : MEU_JARDIM_WIDTH;
+    }
+
+    getWorldHeight() {
+        return this.mapaAtual === "mundo_aberto" ? MUNDO_ABERTO_HEIGHT : MEU_JARDIM_HEIGHT;
     }
 
     setupCanvasClickListener() {
@@ -109,26 +139,30 @@ export class Game {
             const rect = this.canvas.getBoundingClientRect();
             const clickX = ((e.clientX - rect.left) / rect.width) * this.canvas.width;
             const clickY = ((e.clientY - rect.top) / rect.height) * this.canvas.height;
-            // Convert to world space
-            const worldX = this.screenToWorldX(clickX);
-            const worldY = clickY;
 
             if (this.mapaAtual === "meu_jardim") {
                 const customizadora = this.estruturas.find(est => est.id === "customizadora");
-                if (customizadora && Math.hypot(worldX - customizadora.x, worldY - customizadora.y) < customizadora.raio + 25) {
-                    if (this.uiManager) this.uiManager.toggleMenu('customizadora');
-                    return;
+                if (customizadora) {
+                    const proj = this.projetarCoordenadas(customizadora.x, customizadora.y);
+                    if (Math.hypot(clickX - proj.x, clickY - proj.y) < (customizadora.raio + 25) * proj.scale) {
+                        if (this.uiManager) this.uiManager.toggleMenu('customizadora');
+                        return;
+                    }
                 }
                 const mesaSolar = this.estruturas.find(est => est.id === "mesaSolar");
-                if (mesaSolar && Math.hypot(worldX - mesaSolar.x, worldY - mesaSolar.y) < mesaSolar.raio + 25) {
-                    if (this.uiManager) this.uiManager.toggleMenu('vitrine');
-                    return;
+                if (mesaSolar) {
+                    const proj = this.projetarCoordenadas(mesaSolar.x, mesaSolar.y);
+                    if (Math.hypot(clickX - proj.x, clickY - proj.y) < (mesaSolar.raio + 25) * proj.scale) {
+                        if (this.uiManager) this.uiManager.toggleMenu('vitrine');
+                        return;
+                    }
                 }
             }
 
             if (this.mapaAtual === "mundo_aberto") {
                 for (let npc of this.npcs) {
-                    if (Math.hypot(worldX - npc.x, worldY - npc.y) < 45) {
+                    const proj = this.projetarCoordenadas(npc.x, npc.y);
+                    if (Math.hypot(clickX - proj.x, clickY - proj.y) < 45 * proj.scale) {
                         if (this.uiManager) this.uiManager.abrirLoreNPC(npc);
                         return;
                     }
@@ -166,8 +200,21 @@ export class Game {
         }
 
         this.mapaAtual = idMapa;
-        this.camera.x = 0;
-        this.camera.y = 0;
+        
+        if (idMapa === "mundo_aberto") {
+            this.player.x = 100;
+            this.player.y = 1500;
+        } else {
+            this.player.x = 1200;
+            this.player.y = 1200;
+        }
+
+        const worldW = this.getWorldWidth();
+        const worldH = this.getWorldHeight();
+        const targetX = this.player.x - this.canvas.width / 2;
+        const targetY = this.player.y - this.canvas.height * 0.6;
+        this.camera.x = Math.max(0, Math.min(targetX, worldW - this.canvas.width));
+        this.camera.y = Math.max(0, Math.min(targetY, worldH - this.canvas.height));
 
         const btnHome = document.getElementById('btn-home');
         if (btnHome) {
@@ -185,16 +232,16 @@ export class Game {
 
         this.particleManager.update();
 
-        // ── SWIMMING CHECK (new top-down lake at 2350,440, rx=325,ry=205) ─────
+        // ── SWIMMING CHECK ─────────────────────────────────────────────────────
         if (this.mapaAtual === "mundo_aberto") {
-            const lakeCx = 2350, lakeCy = 440, lakeRx = 325, lakeRy = 205;
+            const lakeCx = 2700, lakeCy = 1500, lakeRx = 500, lakeRy = 320;
             const dx = this.player.x - lakeCx;
             const dy = this.player.y - lakeCy;
             const inLake = (dx*dx)/(lakeRx*lakeRx) + (dy*dy)/(lakeRy*lakeRy) <= 1;
 
-            // Bridge: horizontal path across lake, y=398-432, x=2100-2600
-            const naPonte = (this.player.x >= 2100 && this.player.x <= 2600 &&
-                             this.player.y >= 392 && this.player.y <= 434);
+            // Bridge path checking in world coordinates
+            const naPonte = (this.player.x >= 2150 && this.player.x <= 3250 &&
+                             this.player.y >= 1455 && this.player.y <= 1545);
 
             if (inLake && !naPonte) {
                 this.player.noLago = true;
@@ -208,36 +255,33 @@ export class Game {
             this.player.velocidade = 6;
         }
 
-        // ── PLAYER UPDATE with world-width clamping ───────────────────────────
+        // ── PLAYER UPDATE with world dimensions ───────────────────────────────
         const worldW = this.getWorldWidth();
-        // We pass the actual canvas width so internal clamping doesn't interfere,
-        // then we override with world bounds below.
-        this.player.update(this.input, worldW, this.canvas.height);
-        // Enforce world bounds
+        const worldH = this.getWorldHeight();
+        
+        this.player.update(this.input, worldW, worldH);
+        
+        // Enforce world boundaries
         if (this.player.x < 40) this.player.x = 40;
         if (this.player.x > worldW - 40) this.player.x = worldW - 40;
+        if (this.player.y < 150) this.player.y = 150;
+        if (this.player.y > worldH - 90) this.player.y = worldH - 90;
 
-        // ── CAMERA UPDATE ──────────────────────────────────────────────────────
-        if (this.mapaAtual === "mundo_aberto") {
-            const targetX = this.player.x - this.canvas.width / 2;
-            this.camera.x = Math.max(0, Math.min(targetX, MUNDO_ABERTO_WIDTH - this.canvas.width));
-        } else {
-            this.camera.x = 0;
-        }
+        // ── CAMERA UPDATE (Horizontal and Vertical) ───────────────────────────
+        const targetX = this.player.x - this.canvas.width / 2;
+        const targetY = this.player.y - this.canvas.height * 0.6;
+        this.camera.x = Math.max(0, Math.min(targetX, worldW - this.canvas.width));
+        this.camera.y = Math.max(0, Math.min(targetY, worldH - this.canvas.height));
 
         // ── MAP TRANSITIONS ────────────────────────────────────────────────────
-        if (this.mapaAtual === "meu_jardim" && this.player.x > 1230) {
+        if (this.mapaAtual === "meu_jardim" && this.player.x > MEU_JARDIM_WIDTH - 60) {
             this.irParaMapa("mundo_aberto");
-            if (this.mapaAtual === "mundo_aberto") {
-                this.player.x = 70;
-                this.player.y = 480;
-            } else {
-                this.player.x = 1220;
-            }
+            this.player.x = 70;
+            this.player.y = 1500;
         } else if (this.mapaAtual === "mundo_aberto" && this.player.x < 50) {
             this.irParaMapa("meu_jardim");
-            this.player.x = 1200;
-            this.player.y = 480;
+            this.player.x = MEU_JARDIM_WIDTH - 100;
+            this.player.y = 1200;
         }
 
         // ── STRUCTURE COLLISIONS ───────────────────────────────────────────────
@@ -261,55 +305,55 @@ export class Game {
             this.npcs.forEach(npc => {
                 if (npc.timerFala > 0) npc.timerFala--;
 
-                // b7 Cogumelo - sways in mushroom kingdom, spreads spores
+                // b7 Cogumelo - sways in mushroom kingdom
                 if (npc.atividade === "cogumelo") {
-                    npc.x = 968 + Math.sin(t / 820) * 38;
-                    npc.y = 438 + Math.sin(t / 500) * 12;
+                    npc.x = 1400 + Math.sin(t / 820) * 38;
+                    npc.y = 1000 + Math.sin(t / 500) * 12;
                     if (Math.random() < 0.003) {
                         npc.textoFala = ["🍄","✨","🌿","💫","🌙"][Math.floor(Math.random()*5)];
                         npc.timerFala = 85;
                     }
                 }
-                // b1 Serrano - tends the garden (watering up/down motion)
-                if (npc.atividade === "serrano") {
-                    npc.y = 440 + Math.sin(t / 350) * 4;
+                // b1 Serrano - tends the garden
+                else if (npc.atividade === "serrano") {
+                    npc.y = 1100 + Math.sin(t / 350) * 4;
                     if (Math.random() < 0.003) {
                         npc.textoFala = ["🍅", "🌱", "💧", "🌿"][Math.floor(Math.random()*4)];
                         npc.timerFala = 90;
                     }
                 }
-                // b2 Maracatu - plays drums in mushroom grove (rhythmic bounce)
+                // b2 Maracatu - rhythmic bounce
                 else if (npc.atividade === "maracatu") {
-                    npc.y = 440 + Math.abs(Math.sin(t / 180)) * -8;
+                    npc.y = 1050 + Math.abs(Math.sin(t / 180)) * -8;
                     if (Math.random() < 0.004) {
                         npc.textoFala = ["🎵", "🥁", "♪", "🎶"][Math.floor(Math.random()*4)];
                         npc.timerFala = 70;
                     }
                 }
-                // b3 Devo - walks near waterfall collecting energy
+                // b3 Devo - walks collecting energy
                 else if (npc.atividade === "devo") {
                     npc.x += npc.dir * 0.7;
-                    if (npc.x > 1560) { npc.x = 1560; npc.dir = -1; }
-                    if (npc.x < 1350) { npc.x = 1350; npc.dir = 1; }
-                    npc.y = 455 + Math.sin(t / 400) * 3;
+                    if (npc.x > 2100) { npc.x = 2100; npc.dir = -1; }
+                    if (npc.x < 1850) { npc.x = 1850; npc.dir = 1; }
+                    npc.y = 1450 + Math.sin(t / 400) * 3;
                     if (Math.random() < 0.0025) {
                         npc.textoFala = ["⚡", "☀️", "🔋", "✨"][Math.floor(Math.random()*4)];
                         npc.timerFala = 80;
                     }
                 }
-                // b4 Frank - swims in the Great Lake (new position)
+                // b4 Frank - swims in the Great Lake
                 else if (npc.atividade === "frank") {
-                    npc.x = 2350 + Math.sin(t / 1100) * 180;
-                    npc.y = 440 + Math.cos(t / 1100) * 90;
+                    npc.x = 2700 + Math.sin(t / 1100) * 220;
+                    npc.y = 1500 + Math.cos(t / 1100) * 120;
                     npc.noLago = true;
                     if (Math.random() < 0.002) {
                         npc.textoFala = ["🫧", "🐟", "🌊", "🐠"][Math.floor(Math.random()*4)];
                         npc.timerFala = 80;
                     }
                 }
-                // b5 Colombina - performs at market campfire
+                // b5 Colombina - campfire performer
                 else if (npc.atividade === "colombina") {
-                    npc.y = 448 + Math.sin(t / 600) * 2.5;
+                    npc.y = 1600 + Math.sin(t / 600) * 2.5;
                     if (Math.random() < 0.002) {
                         npc.textoFala = ["✨", "🎭", "📜", "💫"][Math.floor(Math.random()*4)];
                         npc.timerFala = 110;
@@ -318,8 +362,8 @@ export class Game {
                 // b6 Ziggy - circles near observatory looking at stars
                 else if (npc.atividade === "ziggy") {
                     npc.angulo += 0.008;
-                    npc.x = 3700 + Math.cos(npc.angulo) * 65;
-                    npc.y = 390 + Math.sin(npc.angulo) * 28;
+                    npc.x = 4500 + Math.cos(npc.angulo) * 65;
+                    npc.y = 900 + Math.sin(npc.angulo) * 28;
                     if (Math.random() < 0.002) {
                         npc.textoFala = ["⭐", "🔭", "🌌", "💥"][Math.floor(Math.random()*4)];
                         npc.timerFala = 90;
@@ -332,40 +376,101 @@ export class Game {
     desenhar() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // ── APPLY CAMERA ───────────────────────────────────────────────────────
-        this.ctx.save();
-        this.ctx.translate(-this.camera.x, 0);
+        // 1. Draw world background (which projects ground grid/paths/lake)
+        this.world.draw(this.ctx, this.mapaAtual, this.canvas.width, this.canvas.height, this.camera, this.player, (x, y) => this.projetarCoordenadas(x, y));
 
-        // Draw world background
-        this.world.draw(this.ctx, this.mapaAtual, this.canvas.width, this.canvas.height, this.camera);
+        // 2. Collect all elements to Y-sort
+        const sortList = [];
 
-        // Draw structures (meu_jardim only)
-        this.estruturas.forEach(est => {
-            if (this.mapaAtual === "meu_jardim" && (est.id === "customizadora" || est.id === "mesaSolar")) {
-                est.draw(this.ctx, this.anguloBalanco, this.player);
+        // Add static scene elements from the world
+        const worldElms = this.world.obterElementosCenario(this.mapaAtual);
+        worldElms.forEach(elm => sortList.push({
+            tipo: elm.tipo,
+            x: elm.x,
+            y: elm.y,
+            s: elm.s,
+            r: elm.r,
+            cor: elm.cor,
+            phase: elm.phase
+        }));
+
+        // Add structures if in Patio
+        if (this.mapaAtual === "meu_jardim") {
+            this.estruturas.forEach(est => {
+                if (est.id === "customizadora" || est.id === "mesaSolar") {
+                    sortList.push({ tipo: "structure", x: est.x, y: est.y, ref: est });
+                }
+            });
+        }
+
+        // Add NPCs if in Mundo Aberto
+        if (this.mapaAtual === "mundo_aberto") {
+            this.npcs.forEach(npc => {
+                sortList.push({ tipo: "npc", x: npc.x, y: npc.y, ref: npc });
+            });
+        }
+
+        // Add Player
+        sortList.push({ tipo: "player", x: this.player.x, y: this.player.y, ref: this.player });
+
+        // Sort by world Y coordinate (ascending)
+        sortList.sort((a, b) => a.y - b.y);
+
+        // 3. Draw each element projected and Y-sorted
+        sortList.forEach(item => {
+            const proj = this.projetarCoordenadas(item.x, item.y);
+            
+            // Frustum Culling: Skip drawing if far outside screen boundaries
+            if (proj.x < -160 || proj.x > this.canvas.width + 160 || proj.y < -160 || proj.y > this.canvas.height + 160) {
+                return;
             }
+
+            // Save and apply matrix transformation wrapper
+            this.ctx.save();
+            this.ctx.translate(proj.x, proj.y);
+            this.ctx.scale(proj.scale, proj.scale);
+            this.ctx.translate(-item.x, -item.y);
+
+            // Execute actual drawing code relative to the transformed coordinate system
+            if (item.tipo === "tree") {
+                this.world.drawACTree(this.ctx, 0, 0, item.s);
+            } else if (item.tipo === "bush") {
+                this.world.drawBush(this.ctx, 0, 0, item.s);
+            } else if (item.tipo === "mushroom") {
+                const alpha = 0.30 + Math.sin(Date.now()/950 + item.phase)*0.22;
+                this.world.drawMushroomTopDown(this.ctx, 0, 0, item.r, item.cor, alpha);
+            } else if (item.tipo === "marketTent") {
+                this.world.drawMarketTent(this.ctx, item.x, item.y, item.cor);
+            } else if (item.tipo === "barrel") {
+                this.world.drawBarrel(this.ctx, item.x, item.y);
+            } else if (item.tipo === "campfire") {
+                this.world.drawCampfire(this.ctx, item.x, item.y);
+            } else if (item.tipo === "gardenPatch") {
+                this.world.drawGardenPatch(this.ctx, item.x, item.y);
+            } else if (item.tipo === "observatoryDome") {
+                this.world.drawObservatoryDome(this.ctx, item.x, item.y);
+            } else if (item.tipo === "telescope") {
+                this.world.drawTelescope(this.ctx, item.x, item.y);
+            } else if (item.tipo === "solarPanel") {
+                this.world.drawSolarPanel(this.ctx, item.x, item.y);
+            } else if (item.tipo === "structure") {
+                item.ref.draw(this.ctx, this.anguloBalanco, this.player);
+            } else if (item.tipo === "npc") {
+                this.desenharNPC(item.ref);
+            } else if (item.tipo === "player") {
+                item.ref.draw(this.ctx);
+            }
+
+            this.ctx.restore();
         });
 
-        // Draw NPCs in mundo_aberto
+        // 4. Draw bridge front rail over sorted elements (Mundo Aberto only)
         if (this.mapaAtual === "mundo_aberto") {
-            // Sort NPCs by Y position so ones lower on screen draw in front
-            const sorted = [...this.npcs].sort((a, b) => a.y - b.y);
-            sorted.forEach(npc => this.desenharNPC(npc));
+            this.world.drawBridgeFront(this.ctx, (x, y) => this.projetarCoordenadas(x, y));
         }
 
-        // Draw player
-        this.player.draw(this.ctx);
-
-        // Bridge front rail over player
-        if (this.mapaAtual === "mundo_aberto") {
-            this.world.drawBridgeFront(this.ctx);
-        }
-
-        // Ambient particles
+        // 5. Draw ambient particles (flat screen space overlay)
         this.particleManager.draw(this.ctx);
-
-        // ── RESTORE (end camera transform) ────────────────────────────────────
-        this.ctx.restore();
 
         // ── FIXED HUD ELEMENTS (no camera offset) ─────────────────────────────
         this.desenharHUDFixo();
@@ -420,27 +525,81 @@ export class Game {
             ctx.clip();
         }
 
-        // Jabuli body
-        ctx.fillStyle = npc.cor;
-        ctx.beginPath();
-        renderizarGeometriaGota(ctx, npc.x, npc.y, 22, npc.morfologia);
-        ctx.fill();
-        ctx.strokeStyle = "#3d2f26";
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
+        // Setup translation, rotation (wobble) and scale (flip)
+        ctx.save();
+        ctx.translate(npc.x, npc.y);
 
-        // Eyes
-        let olhoY = npc.y - 18;
-        if (npc.morfologia === "longa") olhoY = npc.y - 22;
-        if (npc.morfologia === "gorda") olhoY = npc.y - 14;
-        ctx.fillStyle = "#1e1b1a";
-        ctx.beginPath();
-        ctx.arc(npc.x - 6, olhoY, 3, 0, Math.PI*2);
-        ctx.arc(npc.x + 6, olhoY, 3, 0, Math.PI*2);
-        ctx.fill();
+        // Animação de balanço (wobble) constante para NPCs ativos
+        let wobbleAngle = Math.sin(Date.now() / 120 + npc.x) * 0.08;
+        ctx.rotate(wobbleAngle);
 
-        // Hat
-        renderizarChapeuGenerico(ctx, npc.x, npc.y, npc.chapeu, npc.morfologia);
+        // Determinar direção horizontal do NPC
+        let facingRight = true;
+        if (npc.dir !== undefined && npc.dir < 0) {
+            facingRight = false;
+        } else if (npc.atividade === "frank") {
+            // Derivada do movimento circular: se cosseno < 0, está indo para a esquerda
+            if (Math.cos(Date.now() / 1100) < 0) facingRight = false;
+        } else if (npc.atividade === "ziggy") {
+            // Derivada do movimento orbital: se seno > 0, está indo para a esquerda
+            if (Math.sin(npc.angulo) > 0) facingRight = false;
+        } else if (npc.atividade === "cogumelo") {
+            // Derivada do balanço: se cosseno < 0, está indo para a esquerda
+            if (Math.cos(Date.now() / 820) < 0) facingRight = false;
+        }
+
+        if (!facingRight) {
+            ctx.scale(-1, 1);
+        }
+
+        const spriteObj = obterSpriteTintada(npc.nome, npc.cor);
+        if (spriteObj && spriteObj.image) {
+            const config = spriteObj.config;
+            const sx = (config.larguraTotalImagem - config.larguraJabuli) / 2;
+            const sy = (config.alturaTotalImagem - config.alturaJabuli) / 2;
+            const sw = config.larguraJabuli;
+            const sh = config.alturaJabuli;
+            
+            // Distorcer conforme morfologia
+            let dw = config.larguraDesenho;
+            let dh = config.alturaDesenho;
+            if (npc.morfologia === "longa") {
+                dw = 42;
+                dh = 72;
+            } else if (npc.morfologia === "gorda") {
+                dw = 62;
+                dh = 48;
+            }
+
+            ctx.drawImage(spriteObj.image, sx, sy, sw, sh, -dw / 2, -dh, dw, dh);
+            
+            // Chapéu
+            renderizarChapeuGenerico(ctx, 0, 0, npc.chapeu, npc.morfologia);
+        } else {
+            // Fallback vetorial
+            ctx.fillStyle = npc.cor;
+            ctx.beginPath();
+            renderizarGeometriaGota(ctx, 0, 0, 22, npc.morfologia);
+            ctx.fill();
+            ctx.strokeStyle = "#3d2f26";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            // Olhos
+            let olhoY = -18;
+            if (npc.morfologia === "longa") olhoY = -22;
+            if (npc.morfologia === "gorda") olhoY = -14;
+            ctx.fillStyle = "#1e1b1a";
+            ctx.beginPath();
+            ctx.arc(-6, olhoY, 3, 0, Math.PI*2);
+            ctx.arc(6, olhoY, 3, 0, Math.PI*2);
+            ctx.fill();
+
+            // Chapéu
+            renderizarChapeuGenerico(ctx, 0, 0, npc.chapeu, npc.morfologia);
+        }
+
+        ctx.restore(); // Restaura a translação, rotação e escala
 
         if (noLago) {
             ctx.restore();

@@ -347,201 +347,240 @@ export class Structure {
             }
             ctx.restore();
         } else if (this.tipo === "terminal") {
-            // TERMINAL SOLARPUNK - plataforma elíptica metálica com orbe holográfico
+            // TERMINAL SOLARPUNK ISOMÉTRICO
             const t = Date.now() / 1000;
 
-            // Sombra do conjunto
-            ctx.fillStyle = "rgba(0,0,0,0.09)";
+            // Sombra do conjunto (losango suave)
+            ctx.fillStyle = "rgba(0,0,0,0.08)";
             ctx.beginPath();
-            ctx.ellipse(this.x + 5, this.y + 48, 70, 18, 0, 0, Math.PI*2);
+            ctx.moveTo(this.x, this.y + 25);
+            ctx.lineTo(this.x + 70, this.y + 45);
+            ctx.lineTo(this.x, this.y + 65);
+            ctx.lineTo(this.x - 70, this.y + 45);
+            ctx.closePath();
             ctx.fill();
 
-            // Base elíptica inferior (chão da plataforma - estilo plataforma da torre)
-            const baseGrd = ctx.createRadialGradient(this.x, this.y+30, 0, this.x, this.y+30, 65);
-            baseGrd.addColorStop(0, "rgba(220,238,230,0.95)");
-            baseGrd.addColorStop(0.7, "rgba(168,205,190,0.9)");
-            baseGrd.addColorStop(1, "rgba(120,170,155,0.88)");
-            ctx.fillStyle = baseGrd;
-            ctx.strokeStyle = "rgba(70,152,136,0.75)";
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.ellipse(this.x, this.y + 35, 62, 14, 0, 0, Math.PI*2);
-            ctx.fill(); ctx.stroke();
-            // Inner shimmer
-            ctx.strokeStyle = "rgba(195,235,222,0.55)";
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.ellipse(this.x - 5, this.y + 33, 46, 9, 0, 0, Math.PI*2);
-            ctx.stroke();
-
-            // Arcos metálicos estruturais curvos (inspirados nas costelas da torre)
-            ctx.strokeStyle = "rgba(110,168,152,0.7)";
+            // Base de Metal - Face de Baixo da Extrusão
+            ctx.fillStyle = "#7ca092";
+            ctx.strokeStyle = "#3d2f26";
             ctx.lineWidth = 2.5;
-            // Arco esquerdo
             ctx.beginPath();
-            ctx.moveTo(this.x - 55, this.y + 33);
-            ctx.quadraticCurveTo(this.x - 40, this.y - 25, this.x - 8, this.y - 60);
-            ctx.stroke();
-            // Arco direito
-            ctx.beginPath();
-            ctx.moveTo(this.x + 55, this.y + 33);
-            ctx.quadraticCurveTo(this.x + 40, this.y - 25, this.x + 8, this.y - 60);
-            ctx.stroke();
-            // Arco frontal esquerdo
-            ctx.strokeStyle = "rgba(130,185,168,0.5)";
-            ctx.beginPath();
-            ctx.moveTo(this.x - 40, this.y + 40);
-            ctx.quadraticCurveTo(this.x - 45, this.y + 5, this.x - 12, this.y - 55);
-            ctx.stroke();
-            // Arco frontal direito
-            ctx.beginPath();
-            ctx.moveTo(this.x + 40, this.y + 40);
-            ctx.quadraticCurveTo(this.x + 45, this.y + 5, this.x + 12, this.y - 55);
-            ctx.stroke();
+            ctx.moveTo(this.x - 60, this.y + 30);
+            ctx.lineTo(this.x + 60, this.y + 30);
+            ctx.lineTo(this.x + 60, this.y + 42);
+            ctx.lineTo(this.x - 60, this.y + 42);
+            ctx.closePath();
+            ctx.fill(); ctx.stroke();
 
-            // Haste central
-            ctx.strokeStyle = "rgba(140,195,178,0.8)";
-            ctx.lineWidth = 3;
+            // Face de Cima da Extrusão (Plataforma Isométrica)
+            const baseGrd = ctx.createLinearGradient(this.x - 60, this.y + 20, this.x + 60, this.y + 40);
+            baseGrd.addColorStop(0, "#eedfd2");
+            baseGrd.addColorStop(1, "#acdfcf");
+            ctx.fillStyle = baseGrd;
             ctx.beginPath();
-            ctx.moveTo(this.x, this.y + 30);
-            ctx.lineTo(this.x, this.y - 55);
-            ctx.stroke();
+            ctx.moveTo(this.x, this.y + 18);
+            ctx.lineTo(this.x + 60, this.y + 30);
+            ctx.lineTo(this.x, this.y + 42);
+            ctx.lineTo(this.x - 60, this.y + 30);
+            ctx.closePath();
+            ctx.fill(); ctx.stroke();
 
-            // Orbe holográfico flutuante
-            const orbY = this.y - 70 + Math.sin(t * 1.2) * 5;
-            const orbGlow = ctx.createRadialGradient(this.x, orbY, 0, this.x, orbY, 26);
-            orbGlow.addColorStop(0, "rgba(255,255,255,0.95)");
-            orbGlow.addColorStop(0.35, "rgba(80,220,200,0.9)");
-            orbGlow.addColorStop(0.7, "rgba(40,180,160,0.75)");
-            orbGlow.addColorStop(1, "rgba(20,140,125,0.0)");
-            ctx.fillStyle = orbGlow;
-            ctx.beginPath();
-            ctx.arc(this.x, orbY, 26, 0, Math.PI*2);
-            ctx.fill();
-
-            // Orbe sólido
-            ctx.fillStyle = "rgba(72,220,196,0.88)";
-            ctx.strokeStyle = "rgba(255,255,255,0.7)";
+            // Detalhe de linhas de grade tecnológica na plataforma
+            ctx.strokeStyle = "rgba(72,152,136,0.3)";
             ctx.lineWidth = 1.5;
             ctx.beginPath();
-            ctx.arc(this.x, orbY, 18, 0, Math.PI*2);
-            ctx.fill(); ctx.stroke();
-
-            // Símbolo + dentro do orbe
-            ctx.strokeStyle = "rgba(255,255,255,0.92)";
-            ctx.lineWidth = 2.5;
-            ctx.beginPath();
-            ctx.moveTo(this.x - 7, orbY); ctx.lineTo(this.x + 7, orbY);
-            ctx.moveTo(this.x, orbY - 7); ctx.lineTo(this.x, orbY + 7);
+            ctx.moveTo(this.x - 30, this.y + 24); ctx.lineTo(this.x + 30, this.y + 36);
+            ctx.moveTo(this.x - 30, this.y + 36); ctx.lineTo(this.x + 30, this.y + 24);
             ctx.stroke();
 
-            // Mini turbina na lateral da plataforma
-            const turbT = Date.now() / 500;
-            const turX = this.x + 50;
-            const turY = this.y + 20;
-            ctx.strokeStyle = "#a8c8d8"; ctx.lineWidth = 1.5;
-            ctx.beginPath(); ctx.moveTo(turX, turY); ctx.lineTo(turX, turY - 16); ctx.stroke();
-            ctx.save(); ctx.translate(turX, turY - 16); ctx.rotate(turbT);
-            ctx.strokeStyle = "#c8e4f0";
-            for (let i = 0; i < 3; i++) {
-                ctx.rotate(Math.PI*2/3);
-                ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-9); ctx.stroke();
-            }
+            // Hastes Isométricas Laterais (Arcos metálicos)
+            ctx.strokeStyle = "#3d2f26";
+            ctx.lineWidth = 2.5;
+            // Haste esquerda
+            ctx.beginPath();
+            ctx.moveTo(this.x - 45, this.y + 25);
+            ctx.quadraticCurveTo(this.x - 40, this.y - 25, this.x - 10, this.y - 50);
+            ctx.stroke();
+            // Haste direita
+            ctx.beginPath();
+            ctx.moveTo(this.x + 45, this.y + 25);
+            ctx.quadraticCurveTo(this.x + 40, this.y - 25, this.x + 10, this.y - 50);
+            ctx.stroke();
+
+            // Haste vertical de sustentação da tela
+            ctx.beginPath();
+            ctx.moveTo(this.x, this.y + 30);
+            ctx.lineTo(this.x, this.y - 45);
+            ctx.stroke();
+
+            // Tela Holográfica Isométrica Flutuante (losango brilhante inclinado)
+            const orbY = this.y - 65 + Math.sin(t * 1.5) * 4;
+            ctx.save();
+            ctx.translate(this.x, orbY);
+            
+            // Brilho holográfico de fundo
+            const glowGrd = ctx.createRadialGradient(0, 0, 0, 0, 0, 32);
+            glowGrd.addColorStop(0, "rgba(72, 220, 196, 0.6)");
+            glowGrd.addColorStop(1, "rgba(72, 220, 196, 0)");
+            ctx.fillStyle = glowGrd;
+            ctx.beginPath();
+            ctx.arc(0, 0, 32, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Moldura holográfica (Losango inclinado)
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+            ctx.fillStyle = "rgba(72, 220, 196, 0.72)";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, -18);
+            ctx.lineTo(26, -5);
+            ctx.lineTo(0, 8);
+            ctx.lineTo(-26, -5);
+            ctx.closePath();
+            ctx.fill(); ctx.stroke();
+
+            // Símbolo holográfico de carregamento interno (+)
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-8, -5); ctx.lineTo(8, -5);
+            ctx.moveTo(0, -13); ctx.lineTo(0, 3);
+            ctx.stroke();
+
             ctx.restore();
 
-            // Plantas pequenas ao redor da base
-            [[-48, 38], [50, 38], [-30, 42], [35, 42]].forEach(([dx, dy]) => {
+            // Pequenas plantinhas na base
+            [[-38, 38], [38, 38], [-20, 41], [20, 41]].forEach(([dx, dy]) => {
                 ctx.fillStyle = "#2a9d8f";
                 ctx.beginPath();
-                ctx.arc(this.x + dx, this.y + dy, 5, 0, Math.PI*2);
+                ctx.arc(this.x + dx, this.y + dy, 4, 0, Math.PI*2);
                 ctx.fill();
             });
 
         } else if (this.tipo === "mesa") {
-            // Tampo da mesa (Elipse de vidro verde-água brilhante)
-            ctx.fillStyle = "rgba(42, 157, 143, 0.85)"; // Verde esmeralda translúcido
-            ctx.strokeStyle = "#3d2f26";
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.ellipse(this.x, this.y + 10, 60, 20, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
+            // MESA RÚSTICA ISOMÉTRICA DE ÁLBUM
 
-            // Pernas da mesa (Pernas rústicas de bronze/latão)
+            // Sombra da mesa
+            ctx.fillStyle = "rgba(0,0,0,0.06)";
+            ctx.beginPath();
+            ctx.moveTo(this.x, this.y + 35);
+            ctx.lineTo(this.x + 72, this.y + 46);
+            ctx.lineTo(this.x, this.y + 57);
+            ctx.lineTo(this.x - 72, this.y + 46);
+            ctx.closePath();
+            ctx.fill();
+
+            // Pernas Traseiras/Laterais (Madeira isométrica)
             ctx.strokeStyle = "#3d2f26";
-            ctx.lineWidth = 4;
+            ctx.lineWidth = 3.5;
             // Perna esquerda
             ctx.beginPath();
-            ctx.moveTo(this.x - 40, this.y + 16);
-            ctx.quadraticCurveTo(this.x - 50, this.y + 30, this.x - 35, this.y + 45);
+            ctx.moveTo(this.x - 45, this.y + 18);
+            ctx.lineTo(this.x - 45, this.y + 46);
             ctx.stroke();
             // Perna direita
             ctx.beginPath();
-            ctx.moveTo(this.x + 40, this.y + 16);
-            ctx.quadraticCurveTo(this.x + 50, this.y + 30, this.x + 35, this.y + 45);
+            ctx.moveTo(this.x + 45, this.y + 18);
+            ctx.lineTo(this.x + 45, this.y + 46);
             ctx.stroke();
-            // Perna central/traseira
-            ctx.lineWidth = 3;
+            // Perna central frontal (mais próxima ao espectador)
+            ctx.lineWidth = 4.5;
             ctx.beginPath();
-            ctx.moveTo(this.x, this.y + 20);
-            ctx.lineTo(this.x, this.y + 42);
+            ctx.moveTo(this.x, this.y + 24);
+            ctx.lineTo(this.x, this.y + 50);
             ctx.stroke();
 
-            // Base de madeira decorativa conectando as pernas
+            // Travas de madeira conectando as pernas
             ctx.lineWidth = 2.5;
             ctx.beginPath();
-            ctx.moveTo(this.x - 35, this.y + 42);
-            ctx.lineTo(this.x + 35, this.y + 42);
+            ctx.moveTo(this.x - 45, this.y + 36);
+            ctx.lineTo(this.x, this.y + 42);
+            ctx.lineTo(this.x + 45, this.y + 36);
             ctx.stroke();
 
-            // Bordas e detalhes brilhantes de placa solar no tampo de vidro
+            // Tampo de Madeira de Baixo (Borda/Extrusão da mesa)
+            ctx.fillStyle = "#8d705c";
+            ctx.beginPath();
+            ctx.moveTo(this.x, this.y + 8);
+            ctx.lineTo(this.x + 62, this.y + 18);
+            ctx.lineTo(this.x + 62, this.y + 26);
+            ctx.lineTo(this.x, this.y + 32);
+            ctx.lineTo(this.x - 62, this.y + 26);
+            ctx.lineTo(this.x - 62, this.y + 18);
+            ctx.closePath();
+            ctx.fill(); ctx.stroke();
+
+            // Tampo de Cima da Mesa (Vidro Verde-Água Translúcido)
+            ctx.fillStyle = "rgba(42, 157, 143, 0.82)";
+            ctx.beginPath();
+            ctx.moveTo(this.x, this.y + 6);
+            ctx.lineTo(this.x + 60, this.y + 16);
+            ctx.lineTo(this.x, this.y + 24);
+            ctx.lineTo(this.x - 60, this.y + 16);
+            ctx.closePath();
+            ctx.fill(); ctx.stroke();
+
+            // Detalhe de brilho na borda de vidro
             ctx.strokeStyle = "#48bcae";
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 1.5;
             ctx.beginPath();
-            ctx.ellipse(this.x, this.y + 10, 48, 14, 0, 0, Math.PI * 2);
+            ctx.moveTo(this.x, this.y + 10);
+            ctx.lineTo(this.x + 48, this.y + 18);
+            ctx.lineTo(this.x, this.y + 22);
+            ctx.lineTo(this.x - 48, this.y + 18);
+            ctx.closePath();
             ctx.stroke();
 
-            // Livro Aberto em cima da mesa (Álbum de Selos)
+            // Livro Aberto Isométrico no Centro
             ctx.save();
-            ctx.translate(this.x, this.y + 2);
+            ctx.translate(this.x, this.y + 12);
 
-            // Páginas abertas (Fundo creme)
+            // Capa sob as páginas
+            ctx.fillStyle = "#c44b2e";
+            ctx.beginPath();
+            ctx.moveTo(0, -11);
+            ctx.lineTo(20, -5);
+            ctx.lineTo(20, 7);
+            ctx.lineTo(0, 1);
+            ctx.lineTo(-20, 7);
+            ctx.lineTo(-20, -5);
+            ctx.closePath();
+            ctx.fill(); ctx.stroke();
+
+            // Páginas Abertas (Fundo Creme, isométrico)
             ctx.fillStyle = "#fdf0d5";
-            ctx.strokeStyle = "#3d2f26";
-            ctx.lineWidth = 2;
             
-            // Lado esquerdo do livro
+            // Lado Esquerdo do Livro
             ctx.beginPath();
-            ctx.moveTo(-20, -6);
-            ctx.quadraticCurveTo(-10, -8, 0, -6);
-            ctx.lineTo(0, 6);
-            ctx.quadraticCurveTo(-10, 4, -20, 6);
+            ctx.moveTo(-18, -4);
+            ctx.lineTo(0, -9);
+            ctx.lineTo(0, 1);
+            ctx.lineTo(-18, 6);
             ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
+            ctx.fill(); ctx.stroke();
 
-            // Lado direito do livro
+            // Lado Direito do Livro
             ctx.beginPath();
-            ctx.moveTo(0, -6);
-            ctx.quadraticCurveTo(10, -8, 20, -6);
-            ctx.lineTo(20, 6);
-            ctx.quadraticCurveTo(10, 4, 0, 6);
+            ctx.moveTo(0, -9);
+            ctx.lineTo(18, -4);
+            ctx.lineTo(18, 6);
+            ctx.lineTo(0, 1);
             ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
+            ctx.fill(); ctx.stroke();
 
-            // Linha divisória central (lombo)
+            // Detalhe das linhas do lombo/dobra do livro
             ctx.strokeStyle = "#8d705c";
+            ctx.lineWidth = 1.5;
             ctx.beginPath();
-            ctx.moveTo(0, -7);
-            ctx.lineTo(0, 7);
+            ctx.moveTo(0, -9);
+            ctx.lineTo(0, 2);
             ctx.stroke();
 
-            // Miniaturas de "selos" ou desenhos nas páginas
-            ctx.fillStyle = "#e76f51";
-            ctx.fillRect(-14, -2, 4, 4);
+            // Miniaturas de "selos" ou desenhos isométicos nas páginas
+            ctx.fillStyle = "#8338ec";
+            ctx.fillRect(-12, 0, 4, 3);
             ctx.fillStyle = "#2a9d8f";
-            ctx.fillRect(10, -2, 4, 4);
+            ctx.fillRect(8, -1, 4, 3);
 
             ctx.restore();
         }

@@ -1,83 +1,127 @@
 import { configuracaoMapas } from '../constants.js';
 
-export const MUNDO_ABERTO_WIDTH = 4000;
+export const MEU_JARDIM_WIDTH = 2400;
+export const MEU_JARDIM_HEIGHT = 1800;
+export const MUNDO_ABERTO_WIDTH = 5000;
+export const MUNDO_ABERTO_HEIGHT = 3000;
 
 export class World {
     constructor() {
-        // Grass tufts (avoid placing in sky zone y<140)
-        this.grassTuftsMJ = this._makeTufts(35, 1280, 145, 720);
-        this.grassTuftsMA = this._makeTufts(220, 4000, 145, 720);
+        // Grass tufts (can place anywhere since sky is removed)
+        this.grassTuftsMJ = this._makeTufts(150, MEU_JARDIM_WIDTH, 150, MEU_JARDIM_HEIGHT - 100);
+        this.grassTuftsMA = this._makeTufts(450, MUNDO_ABERTO_WIDTH, 150, MUNDO_ABERTO_HEIGHT - 100);
 
-        // Bushes for pátio
+        // Trees and Bushes for Meu Jardim (Patio)
+        this.treesMJ = [];
+        // Top windbreak for Meu Jardim
+        for (let tx = 80; tx < MEU_JARDIM_WIDTH; tx += 140) {
+            this.treesMJ.push({ x: tx, y: 200, s: 0.8 });
+        }
+        // Bottom windbreak for Meu Jardim
+        for (let tx = 80; tx < MEU_JARDIM_WIDTH; tx += 180) {
+            this.treesMJ.push({ x: tx, y: MEU_JARDIM_HEIGHT - 120, s: 0.8 });
+        }
+        // Orchard in Meu Jardim (top left)
+        [[300, 600], [450, 600], [600, 600],
+         [300, 800], [450, 800], [600, 800]].forEach(([tx, ty]) => {
+            this.treesMJ.push({ x: tx, y: ty, s: 0.75 });
+        });
+
         this.bushesMJ = [
-            { x:62, y:360, s:0.9 }, { x:148, y:340, s:0.8 },
-            { x:1118, y:360, s:0.88 }, { x:1198, y:400, s:0.72 }
+            { x: 150, y: 1000, s: 0.85 }, { x: 230, y: 980, s: 0.78 },
+            { x: 1900, y: 1000, s: 0.88 }, { x: 2000, y: 1040, s: 0.75 },
+            // Hedges around plaza center (1200, 1000)
+            { x: 1000, y: 850, s: 0.8 }, { x: 1080, y: 850, s: 0.8 },
+            { x: 1320, y: 850, s: 0.8 }, { x: 1400, y: 850, s: 0.8 },
+            { x: 1000, y: 1150, s: 0.8 }, { x: 1080, y: 1150, s: 0.8 },
+            { x: 1320, y: 1150, s: 0.8 }, { x: 1400, y: 1150, s: 0.8 }
         ];
-        // Bushes spread across mundo aberto
+
+        // Bushes for mundo_aberto - organized as hedges flanking the main path (y = 1500)
         this.bushesMA = [];
-        for (let i = 0; i < 48; i++) {
-            this.bushesMA.push({
-                x: 75 + i * 82 + Math.sin(i * 1.3) * 18,
-                y: 180 + Math.random() * 360,
-                s: 0.65 + Math.random() * 0.88
-            });
+        for (let i = 0; i < 52; i++) {
+            const bx = 100 + i * 92;
+            if (bx > 2100 && bx < 3300) continue; // Skip lake/bridge
+            
+            // Leave gaps for branches
+            const isGap = (Math.abs(bx - 600) < 60 || Math.abs(bx - 1400) < 60 || Math.abs(bx - 3800) < 60 || Math.abs(bx - 4500) < 60);
+            if (!isGap) {
+                this.bushesMA.push({ x: bx, y: 1440, s: 0.7 });
+                this.bushesMA.push({ x: bx + 18, y: 1560, s: 0.7 });
+            }
         }
 
-        // Big mushrooms in the Mushroom Kingdom zone (x 580-1380)
+        // Mushrooms - organized in a magical fairy grove/ring around the Cogumelo NPC (1400, 900)
         this.mushrooms = [];
-        for (let i = 0; i < 34; i++) {
+        const mCenter = { x: 1400, y: 900 };
+        for (let i = 0; i < 36; i++) {
+            const angle = (i / 18) * Math.PI * 2;
+            const radius = 90 + (i % 2 === 0 ? 30 : -20) + Math.random() * 15;
+            const mx = mCenter.x + Math.cos(angle) * radius;
+            const my = mCenter.y + Math.sin(angle) * radius;
             this.mushrooms.push({
-                x: 600 + Math.random() * 750,
-                y: 185 + Math.random() * 370,
-                r: 16 + Math.random() * 40,
-                cor: ['#c44b2e','#e76f51','#8338ec','#ff6b9d','#f2cc8f','#c04a8e','#5a2d8f'][Math.floor(Math.random()*7)],
+                x: mx,
+                y: my,
+                r: 16 + (i % 3) * 8,
+                cor: ['#c44b2e','#e76f51','#8338ec','#ff6b9d','#f2cc8f'][i % 5],
                 phase: Math.random() * Math.PI * 2
             });
         }
 
-        // Bioluminescent plants (zone 6, x 2850-3400)
+        // Bioluminescent plants (zone 6, x 3500-4100, y 500-1100) - organized in neat clusters
         this.glowPlants = [];
-        for (let i = 0; i < 30; i++) {
+        for (let i = 0; i < 32; i++) {
+            const clusterX = 3500 + Math.floor(i / 8) * 160 + Math.sin(i) * 15;
+            const clusterY = 600 + (i % 8) * 60 + Math.cos(i) * 15;
             this.glowPlants.push({
-                x: 2850 + Math.random() * 520,
-                y: 180 + Math.random() * 350,
-                r: 7 + Math.random() * 18,
-                hue: Math.random() < 0.5 ? 'cyan' : 'purple',
+                x: clusterX,
+                y: clusterY,
+                r: 10 + (i % 3) * 4,
+                hue: i % 2 === 0 ? 'cyan' : 'purple',
                 phase: Math.random() * Math.PI * 2
             });
         }
 
-        // AC Trees placed in mundo_aberto (avoiding main path and structures)
-        this.treesMA = [
-            // Entry meadow zone (x 0-580)
-            {x:72,y:195,s:0.72},{x:130,y:280,s:0.65},{x:188,y:175,s:0.68},{x:240,y:335,s:0.75},
-            {x:308,y:210,s:0.7},{x:365,y:315,s:0.68},{x:430,y:240,s:0.72},{x:494,y:185,s:0.65},{x:548,y:320,s:0.7},
-            // Post-mushroom (x 1380-2000)
-            {x:1388,y:225,s:0.72},{x:1430,y:335,s:0.68},{x:1490,y:275,s:0.7},{x:1535,y:195,s:0.65},
-            // Lake shores (x 2000-2600)
-            {x:2020,y:260,s:0.75},{x:2050,y:360,s:0.7},{x:2550,y:255,s:0.72},{x:2590,y:345,s:0.68},
-            // Market to bio-forest (x 2600-2850)
-            {x:2640,y:195,s:0.7},{x:2690,y:330,s:0.68},{x:2740,y:240,s:0.72},
-            // Observatory approach (x 3350-4000)
-            {x:3355,y:235,s:0.75},{x:3400,y:320,s:0.7},{x:3445,y:185,s:0.68},{x:3490,y:300,s:0.72},
-            {x:3545,y:225,s:0.7},{x:3600,y:340,s:0.68},{x:3660,y:260,s:0.65},
-            {x:3740,y:220,s:0.72},{x:3820,y:190,s:0.7},{x:3875,y:295,s:0.68}
-        ];
+        // AC Trees placed in mundo_aberto - organized in neat orchards and border windbreaks
+        this.treesMA = [];
+        // 1. Top border trees (forest background)
+        for (let tx = 80; tx < MUNDO_ABERTO_WIDTH; tx += 120) {
+            if (tx > 2100 && tx < 3300) continue; // Skip lake
+            this.treesMA.push({ x: tx, y: 200, s: 0.75 });
+        }
+        // 2. Bottom border trees (foreground frame)
+        for (let tx = 80; tx < MUNDO_ABERTO_WIDTH; tx += 160) {
+            if (tx > 2100 && tx < 3300) continue;
+            this.treesMA.push({ x: tx, y: MUNDO_ABERTO_HEIGHT - 120, s: 0.75 });
+        }
+        // 3. Orchard in Meadow Zone (Zone 1)
+        [[120, 800], [240, 800], [360, 800],
+         [120, 950], [240, 950], [360, 950]].forEach(([tx, ty]) => {
+            this.treesMA.push({ x: tx, y: ty, s: 0.75 });
+        });
+        // 4. Orchard in Bio-forest Zone (Zone 6)
+        [[3700, 700], [3840, 700], [3980, 700],
+         [3700, 820], [3840, 820], [3980, 820]].forEach(([tx, ty]) => {
+            this.treesMA.push({ x: tx, y: ty, s: 0.75 });
+        });
 
-        // Clouds for pátio (thin sky strip)
+        // Clouds (moving ground shadows)
         this.clouds = [
-            {x:70,y:38,s:0.7},{x:280,y:22,s:1.0},{x:580,y:45,s:0.85},
-            {x:860,y:28,s:0.9},{x:1140,y:42,s:0.75}
+            {x:100, y:400, s:0.8}, {x:500, y:600, s:1.1}, {x:1100, y:300, s:0.9},
+            {x:1600, y:800, s:1.0}, {x:2100, y:500, s:0.75}
         ];
-        // Clouds for mundo_aberto
         this.cloudsMundo = [];
-        for (let i = 0; i < 28; i++) {
-            this.cloudsMundo.push({ x: Math.random()*4300, y: 15+Math.random()*78, s: 0.7+Math.random()*1.3 });
+        for (let i = 0; i < 30; i++) {
+            this.cloudsMundo.push({
+                x: Math.random() * (MUNDO_ABERTO_WIDTH + 600),
+                y: 200 + Math.random() * (MUNDO_ABERTO_HEIGHT - 400),
+                s: 0.8 + Math.random() * 0.8
+            });
         }
 
-        // MJ towers (displayed near horizon)
+        // MJ towers (far background elements - drawn projected in the distance)
         this.mjTowers = [
-            {x:195, s:0.52}, {x:635, s:0.80}, {x:1062, s:0.50}
+            {x:300, y:120, s:0.52}, {x:1200, y:100, s:0.80}, {x:2100, y:120, s:0.50}
         ];
     }
 
@@ -98,6 +142,17 @@ export class World {
         ctx.arc(cx+46*s, cy, 23*s, 0, Math.PI*2);
         ctx.arc(cx+23*s, cy+8*s, 16*s, 0, Math.PI*2);
         ctx.fill();
+    }
+
+    drawPathTile(ctx, x, y, size = 18) {
+        ctx.beginPath();
+        ctx.moveTo(x, y - size/2);
+        ctx.lineTo(x + size * 1.5, y);
+        ctx.lineTo(x, y + size/2);
+        ctx.lineTo(x - size * 1.5, y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
     }
 
     // Animal Crossing-style tree: top-down elliptical canopy
@@ -239,7 +294,7 @@ export class World {
             grd.addColorStop(0,"rgba(224,240,232,0.93)");
             grd.addColorStop(0.65,"rgba(172,208,192,0.89)");
             grd.addColorStop(1,"rgba(128,178,162,0.85)");
-            ctx.fillStyle=grd; ctx.strokeStyle="rgba(72,152,138,0.72)"; ctx.lineWidth=1.5*s;
+            ctx.fillStyle=grd; ctx.strokeStyle="rgba(72,152,136,0.72)"; ctx.lineWidth=1.5*s;
             ctx.beginPath(); ctx.ellipse(fcx,fy,rx,ry,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
             if (i%2===0) this.drawACTree(ctx, fcx+rx*0.55, fy-ry, s*0.32);
             if (i%3===2) this._drawMiniTurbine(ctx, fcx-rx*0.62, fy-ry-2, s*0.4);
@@ -251,541 +306,599 @@ export class World {
         ctx.beginPath(); ctx.arc(cx,topY,4*s,0,Math.PI*2); ctx.fill();
     }
 
-    // ─── MAIN DRAW ────────────────────────────────────────────────────────────
-    draw(ctx, mapaAtual, canvasWidth, canvasHeight, camera) {
+    draw(ctx, mapaAtual, canvasWidth, canvasHeight, camera, player, projetarFn) {
         if (mapaAtual === "meu_jardim") {
-            this.drawMeuJardim(ctx, canvasWidth, canvasHeight);
+            this.drawMeuJardim(ctx, canvasWidth, canvasHeight, player, projetarFn);
         } else if (mapaAtual === "mundo_aberto") {
-            this.drawMundoAberto(ctx, canvasWidth, canvasHeight, camera);
+            this.drawMundoAberto(ctx, canvasWidth, canvasHeight, camera, player, projetarFn);
         }
     }
 
-    // ─── PÁTIO SOLARPUNK (isometric / Animal Crossing top-down) ──────────────
-    drawMeuJardim(ctx, W, H) {
-        // === THIN SKY STRIP (≈18% of screen) ===
-        const sky = ctx.createLinearGradient(0, 0, 0, 138);
-        sky.addColorStop(0, "#4ea8dc");
-        sky.addColorStop(0.7, "#9ad2ec");
-        sky.addColorStop(1, "#c0ead8");
-        ctx.fillStyle = sky; ctx.fillRect(0, 0, W, 138);
-        this.clouds.forEach(c => this.drawCloud(ctx, c.x, c.y, c.s));
+    // ─── GET SCENE ELEMENTS FOR Y-SORTING ─────────────────────────────────────
+    obterElementosCenario(mapaAtual) {
+        const list = [];
+        if (mapaAtual === "meu_jardim") {
+            this.treesMJ.forEach(t => list.push({ tipo: "tree", x: t.x, y: t.y, s: t.s }));
+            this.bushesMJ.forEach(b => list.push({ tipo: "bush", x: b.x, y: b.y, s: b.s }));
+        } else if (mapaAtual === "mundo_aberto") {
+            this.treesMA.forEach(t => list.push({ tipo: "tree", x: t.x, y: t.y, s: t.s }));
+            this.bushesMA.forEach(b => list.push({ tipo: "bush", x: b.x, y: b.y, s: b.s }));
+            this.mushrooms.forEach(m => list.push({ tipo: "mushroom", x: m.x, y: m.y, r: m.r, cor: m.cor, phase: m.phase }));
+            
+            // Market elements
+            [{x:3600, y:1320, c:"#e76f51"}, {x:3720, y:1320, c:"#f2cc8f"}, {x:3840, y:1320, c:"#2a9d8f"}, {x:3960, y:1320, c:"#e07a5f"}].forEach(tent => {
+                list.push({ tipo: "marketTent", x: tent.x, y: tent.y, cor: tent.c });
+            });
+            [[3580,1400],[3600,1380],[3700,1400],[3720,1380]].forEach(([bx,by]) => {
+                list.push({ tipo: "barrel", x: bx, y: by });
+            });
+            list.push({ tipo: "campfire", x: 3820, y: 1560 });
 
-        // Horizon strip / far ground
-        ctx.fillStyle = "#9cc87a";
-        ctx.fillRect(0, 118, W, 28);
-        const hz = ctx.createLinearGradient(0, 114, 0, 148);
-        hz.addColorStop(0, "rgba(154,208,238,0.82)");
-        hz.addColorStop(1, "rgba(156,200,122,0)");
-        ctx.fillStyle = hz; ctx.fillRect(0, 114, W, 34);
+            // Garden patch
+            list.push({ tipo: "gardenPatch", x: 600, y: 1000 });
 
-        // === TOWERS IN BACKGROUND (near horizon) ===
-        this.mjTowers.forEach(t => {
-            this.drawSolarpunkTower(ctx, t.x, 285, 7, t.s);
+            // Observatory elements
+            list.push({ tipo: "observatoryDome", x: 4500, y: 800 });
+            list.push({ tipo: "telescope", x: 4500, y: 800 });
+            [[4300, 950],[4380, 920],[4460, 890]].forEach(([px,py]) => {
+                list.push({ tipo: "solarPanel", x: px, y: py });
+            });
+        }
+        return list;
+    }
+
+    // ─── DRAW PROJECTED LAKE & RIVERS ─────────────────────────────────────────
+    drawProjectedLake(ctx, cx, cy, rx, ry, projetarFn) {
+        ctx.beginPath();
+        const steps = 60;
+        for (let i = 0; i <= steps; i++) {
+            const angle = (i / steps) * Math.PI * 2;
+            const wx = cx + Math.cos(angle) * rx;
+            const wy = cy + Math.sin(angle) * ry;
+            const proj = projetarFn(wx, wy);
+            if (i === 0) ctx.moveTo(proj.x, proj.y);
+            else ctx.lineTo(proj.x, proj.y);
+        }
+        ctx.closePath();
+    }
+
+    drawProjectedRiver(ctx, points, width, projetarFn) {
+        // Draw left side then right side
+        ctx.beginPath();
+        for (let i = 0; i < points.length; i++) {
+            const p = points[i];
+            const proj = projetarFn(p.x - width/2, p.y);
+            if (i === 0) ctx.moveTo(proj.x, proj.y);
+            else ctx.lineTo(proj.x, proj.y);
+        }
+        for (let i = points.length - 1; i >= 0; i--) {
+            const p = points[i];
+            const proj = projetarFn(p.x + width/2, p.y);
+            ctx.lineTo(proj.x, proj.y);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+    }
+
+    // ─── STRUCTURE DRAWING HELPERS (Called Y-sorted in Game.js) ───────────────
+    drawMarketTent(ctx, x, y, cor) {
+        ctx.fillStyle = cor; ctx.strokeStyle = "#3d2f26"; ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(x, y - 60);
+        ctx.lineTo(x + 52, y - 10);
+        ctx.lineTo(x, y + 40);
+        ctx.lineTo(x - 52, y - 10);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        
+        ctx.fillStyle = "#5a4235"; ctx.beginPath(); ctx.arc(x, y - 10, 5, 0, Math.PI*2); ctx.fill();
+    }
+
+    drawBarrel(ctx, x, y) {
+        ctx.fillStyle = "#8d705c"; ctx.strokeStyle = "#3d2f26"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(x, y, 12, 16, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        // Barrel lid/lines
+        ctx.strokeStyle = "#3d2f26"; ctx.beginPath(); ctx.ellipse(x, y - 10, 11, 4, 0, 0, Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x - 12, y); ctx.lineTo(x + 12, y); ctx.stroke();
+    }
+
+    drawCampfire(ctx, x, y) {
+        const cft = Date.now()/100;
+        ctx.fillStyle = "#5a4235"; ctx.strokeStyle = "#3d2f26"; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.ellipse(x, y, 22, 12, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = `rgba(231,111,81,${0.72+Math.sin(cft)*0.2})`;
+        ctx.beginPath(); ctx.ellipse(x, y - 5, 14, 8, 0, 0, Math.PI*2); ctx.fill();
+    }
+
+    drawGardenPatch(ctx, gx, gy) {
+        // 3D wood boards
+        ctx.fillStyle = "#8d705c"; ctx.strokeStyle = "#3d2f26"; ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(gx - 60, gy); ctx.lineTo(gx, gy + 25); ctx.lineTo(gx, gy + 35); ctx.lineTo(gx - 60, gy + 10);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(gx, gy + 25); ctx.lineTo(gx + 60, gy); ctx.lineTo(gx + 60, gy + 10); ctx.lineTo(gx, gy + 35);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+
+        // Top soil
+        ctx.fillStyle = "#6e503f";
+        ctx.beginPath();
+        ctx.moveTo(gx, gy - 25); ctx.lineTo(gx + 60, gy); ctx.lineTo(gx, gy + 25); ctx.lineTo(gx - 60, gy);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+
+        // Tomatoes
+        [[gx - 25, gy - 5], [gx - 5, gy - 12], [gx + 15, gy + 5], [gx - 5, gy + 12]].forEach(([tx, ty]) => {
+            ctx.fillStyle = "rgba(0,0,0,0.18)";
+            ctx.beginPath(); ctx.ellipse(tx, ty + 3, 5, 2.5, 0, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = "#e76f51";
+            ctx.beginPath(); ctx.arc(tx, ty, 5.5, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = "#2a9d8f";
+            ctx.beginPath(); ctx.arc(tx, ty - 4, 2, 0, Math.PI*2); ctx.fill();
         });
 
-        // === MAIN GROUND (fills ~82% of screen) ===
-        const gnd = ctx.createLinearGradient(0, 128, 0, H);
+        // Watering can icon
+        ctx.fillStyle="#4a90d9"; ctx.strokeStyle="#3d2f26"; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.roundRect(gx + 65, gy + 5, 24, 16, 4); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(gx + 89, gy + 8); ctx.lineTo(gx + 98, gy + 5); ctx.lineTo(gx + 95, gy + 10); ctx.stroke();
+    }
+
+    drawObservatoryDome(ctx, x, y) {
+        ctx.fillStyle = "#c8d8d0"; ctx.strokeStyle = "#3d2f26"; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(x, y - 35, 58, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x, y - 93); ctx.lineTo(x, y + 23); ctx.stroke();
+    }
+
+    drawTelescope(ctx, x, y) {
+        ctx.fillStyle = "#8d9d98"; ctx.strokeStyle = "#3d2f26"; ctx.lineWidth = 2.5;
+        ctx.save(); ctx.translate(x, y - 44); ctx.rotate(Math.PI*0.28);
+        ctx.beginPath(); ctx.roundRect(-6, -32, 12, 64, 4); ctx.fill(); ctx.stroke();
+        ctx.restore();
+    }
+
+    drawSolarPanel(ctx, px, py) {
+        // Support leg
+        ctx.strokeStyle = "#3d2f26"; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(px, py + 12); ctx.lineTo(px, py + 26); ctx.stroke();
+        ctx.fillStyle = "#2b1f1d"; ctx.beginPath(); ctx.ellipse(px, py + 26, 6, 2.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+        // Panel face
+        ctx.fillStyle = "#1e6051"; ctx.strokeStyle = "#3d2f26"; ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(px, py - 10); ctx.lineTo(px + 22, py); ctx.lineTo(px, py + 10); ctx.lineTo(px - 22, py);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+
+        // Panel lines
+        ctx.strokeStyle = "#48bcae"; ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(px - 11, py - 5); ctx.lineTo(px + 11, py + 5);
+        ctx.moveTo(px - 11, py + 5); ctx.lineTo(px + 11, py - 5);
+        ctx.stroke();
+    }
+
+    // ─── DRAW MEU JARDIM (Patio Solarpunk Background Layers) ───────────────────
+    drawMeuJardim(ctx, W, H, player, projetarFn) {
+        // === TERRA COMPLETA (Estilo Don't Starve Background) ===
+        const gnd = ctx.createLinearGradient(0, 0, 0, H);
         gnd.addColorStop(0, "#aed890");
-        gnd.addColorStop(0.18, "#9ac87c");
+        gnd.addColorStop(0.3, "#9ac87c");
         gnd.addColorStop(1, "#80b062");
         ctx.fillStyle = gnd;
-        ctx.beginPath();
-        ctx.moveTo(-10, 128); ctx.quadraticCurveTo(W/2, 122, W+10, 128);
-        ctx.lineTo(W+10, H); ctx.lineTo(-10, H); ctx.closePath(); ctx.fill();
-        ctx.strokeStyle = "#3d2f26"; ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.moveTo(-10, 128); ctx.quadraticCurveTo(W/2, 122, W+10, 128); ctx.stroke();
+        ctx.fillRect(0, 0, W, H);
 
-        // === ISOMETRIC GRID (perspective illusion) ===
-        ctx.strokeStyle = "rgba(0,0,0,0.038)"; ctx.lineWidth = 1;
-        // Horizontal rows (land rows receding into distance)
-        for (let gy = 148; gy < H; gy += 42) {
-            ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
-        }
-        // Diamond/diagonal grid
-        ctx.strokeStyle = "rgba(0,0,0,0.022)";
-        for (let gx = -200; gx < W+200; gx += 88) {
-            ctx.beginPath(); ctx.moveTo(gx, 128); ctx.lineTo(gx+330, H); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(gx, 128); ctx.lineTo(gx-330, H); ctx.stroke();
-        }
-
-        // === FAR BACKGROUND TREES ===
-        [[105,198,0.58],[225,188,0.52],[445,210,0.62],[840,200,0.58],[985,206,0.55],[1148,194,0.60]].forEach(([x,y,s]) => {
-            this.drawACTree(ctx, x, y, s);
+        // === SOMBRAS DE NUVENS NO CHÃO (Projetadas) ===
+        const tShadow = Date.now() / 1500;
+        this.clouds.forEach(c => {
+            const wx = (c.x + tShadow * 30) % (MEU_JARDIM_WIDTH + 400) - 200;
+            const wy = c.y;
+            const proj = projetarFn(wx, wy);
+            ctx.fillStyle = "rgba(0, 0, 0, 0.045)";
+            ctx.beginPath();
+            ctx.ellipse(proj.x, proj.y, 180 * c.s * proj.scale, 70 * c.s * proj.scale * 0.5, 0, 0, Math.PI * 2);
+            ctx.fill();
         });
+
+        // === TOWERS IN BACKGROUND (Far, so drawn flat behind all else but projected) ===
+        this.mjTowers.forEach(t => {
+            const proj = projetarFn(t.x, t.y);
+            ctx.save();
+            ctx.translate(proj.x, proj.y);
+            ctx.scale(proj.scale * t.s, proj.scale * t.s);
+            ctx.translate(-t.x, -t.y);
+            this.drawSolarpunkTower(ctx, t.x, t.y, 5, 1.0);
+            ctx.restore();
+        });
+
+        // === PERSPECTIVE GRID (Converging) ===
+        ctx.strokeStyle = "rgba(0,0,0,0.038)"; ctx.lineWidth = 1;
+        // Horizontal lines in world space
+        for (let wy = 100; wy < MEU_JARDIM_HEIGHT; wy += 100) {
+            const p1 = projetarFn(0, wy);
+            const p2 = projetarFn(MEU_JARDIM_WIDTH, wy);
+            ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+        }
+        // Vertical lines in world space
+        ctx.strokeStyle = "rgba(0,0,0,0.022)";
+        for (let wx = 0; wx <= MEU_JARDIM_WIDTH; wx += 100) {
+            const p1 = projetarFn(wx, 0);
+            const p2 = projetarFn(wx, MEU_JARDIM_HEIGHT);
+            ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+        }
 
         // === PLAZA PERSPECTIVE TILES ===
-        // Converging vertical lines toward vanishing point (W/2, 128)
         ctx.strokeStyle = "rgba(170,148,120,0.16)"; ctx.lineWidth = 1;
-        for (let ti=0; ti<=14; ti++) {
-            const bt = ti/14;
-            const bx = 60 + bt*(W-120);
-            const tx = W/2 + (bx - W/2)*0.08;
-            ctx.beginPath(); ctx.moveTo(tx, 255); ctx.lineTo(bx, H); ctx.stroke();
-        }
-        // Horizontal tile bands
-        [262, 318, 385, 462, 548, 642, 720].forEach(ty => {
-            ctx.beginPath(); ctx.moveTo(60, ty); ctx.lineTo(W-60, ty); ctx.stroke();
-        });
-        // Plaza surface tint
         ctx.fillStyle = "rgba(232,215,192,0.15)";
+        // Draw a projected cobblestone plaza area in the center (1200, 1000)
         ctx.beginPath();
-        ctx.moveTo(60,262); ctx.lineTo(W-60,262); ctx.lineTo(W-60,H); ctx.lineTo(60,H); ctx.closePath(); ctx.fill();
+        const corners = [[800, 750], [1600, 750], [1600, 1250], [800, 1250]];
+        corners.forEach(([cx, cy], i) => {
+            const proj = projetarFn(cx, cy);
+            if (i === 0) ctx.moveTo(proj.x, proj.y);
+            else ctx.lineTo(proj.x, proj.y);
+        });
+        ctx.closePath(); ctx.fill(); ctx.stroke();
 
-        // === GRASS TUFTS ===
+        // === GRASS TUFTS (Flat decoration) ===
         this.grassTuftsMJ.forEach(t => {
-            if (t.y > 148) this.drawGrassTuft(ctx, t.x, t.y, t.scale);
+            const proj = projetarFn(t.x, t.y);
+            this.drawGrassTuft(ctx, proj.x, proj.y, proj.scale * t.scale);
         });
-        this.bushesMJ.forEach(b => this.drawBush(ctx, b.x, b.y, b.s));
 
-        // Some flower accents
-        [[170,228],[420,242],[700,225],[950,238],[1175,242]].forEach(([fx,fy]) => {
+        // Flower accents (drawn flat on ground)
+        [[1700,900],[1020,1100],[700,600],[1450,1150],[1175,700]].forEach(([fx,fy]) => {
+            const proj = projetarFn(fx, fy);
+            const fs = 4 * proj.scale;
             ctx.fillStyle = "#e07a5f"; ctx.strokeStyle = "#3d2f26"; ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.arc(fx, fy, 4, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-            ctx.fillStyle = "#f2cc8f"; ctx.beginPath(); ctx.arc(fx, fy, 1.8, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(proj.x, proj.y, fs, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = "#f2cc8f"; ctx.beginPath(); ctx.arc(proj.x, proj.y, fs*0.4, 0, Math.PI*2); ctx.fill();
         });
 
-        // === PERSPECTIVE PATH (gets wider toward viewer) ===
+        // === PROJECTED PATHS ===
         ctx.fillStyle = "#eedfd2"; ctx.strokeStyle = "#3d2f26"; ctx.lineWidth = 2;
         // Right path toward exit
-        for (let i=0; i<12; i++) {
-            const t = i/11;
-            const py = 325+t*335, px = 640+t*545;
-            const sw = 20+t*22, sh = 11+t*11;
-            ctx.beginPath(); ctx.roundRect(px-sw/2, py-sh/2, sw, sh, 5); ctx.fill(); ctx.stroke();
+        for (let i = 0; i < 15; i++) {
+            const t = i / 14;
+            const px = 1200 + t * 1200;
+            const py = 1000 + t * 200;
+            this.drawPathTile(ctx, px, py, 18, projetarFn);
         }
         // Left path toward terminal
-        for (let i=0; i<8; i++) {
-            const t = i/7;
-            const py = 380+t*110, px = 580-t*210;
-            const sw = 18+t*14, sh = 10+t*9;
-            ctx.beginPath(); ctx.roundRect(px-sw/2, py-sh/2, sw, sh, 5); ctx.fill(); ctx.stroke();
+        for (let i = 0; i < 8; i++) {
+            const t = i / 7;
+            const px = 1200 - t * 300;
+            const py = 1000;
+            this.drawPathTile(ctx, px, py, 16, projetarFn);
         }
 
-        // === RIGHT EXIT INDICATOR ===
-        ctx.fillStyle = "rgba(42,157,143,0.18)"; ctx.strokeStyle = "#2a9d8f"; ctx.lineWidth = 2;
+        // === RIGHT EXIT INDICATOR (Projected box) ===
+        ctx.fillStyle = "rgba(42,157,143,0.14)"; ctx.strokeStyle = "#2a9d8f"; ctx.lineWidth = 2.5;
         ctx.setLineDash([6,4]);
-        ctx.beginPath(); ctx.rect(1237, 320, 43, 280); ctx.fill(); ctx.stroke();
+        ctx.beginPath();
+        const exitBox = [[MEU_JARDIM_WIDTH - 60, 600], [MEU_JARDIM_WIDTH, 600], [MEU_JARDIM_WIDTH, 1400], [MEU_JARDIM_WIDTH - 60, 1400]];
+        exitBox.forEach(([ex, ey], i) => {
+            const proj = projetarFn(ex, ey);
+            if (i === 0) ctx.moveTo(proj.x, proj.y);
+            else ctx.lineTo(proj.x, proj.y);
+        });
+        ctx.closePath(); ctx.fill(); ctx.stroke();
         ctx.setLineDash([]);
-        ctx.fillStyle = "#2a9d8f"; ctx.font = "bold 11px sans-serif"; ctx.textAlign = "center";
-        ctx.save(); ctx.translate(1258, 460); ctx.rotate(Math.PI/2);
+
+        const textProj = projetarFn(MEU_JARDIM_WIDTH - 40, 1000);
+        ctx.fillStyle = "#2a9d8f"; ctx.font = "bold " + Math.round(11 * textProj.scale) + "px sans-serif"; ctx.textAlign = "center";
+        ctx.save(); ctx.translate(textProj.x, textProj.y); ctx.rotate(Math.PI/2);
         ctx.fillText("MUNDO ABERTO →", 0, 0); ctx.restore();
 
-        // Map title
+        // UI Map title (Static/Fixed on screen)
         ctx.fillStyle = "#3d2f26"; ctx.font = "bold 16px 'Outfit', sans-serif"; ctx.textAlign = "left";
         ctx.fillText("🌿 Jabuli World: Pátio Solarpunk", 40, 45);
     }
 
-    // ─── MUNDO ABERTO (4000px – isometric top-down, well-organized) ──────────
-    drawMundoAberto(ctx, W, H, camera) {
+    // ─── DRAW MUNDO ABERTO (Mundo Aberto Background Layers) ───────────────────
+    drawMundoAberto(ctx, W, H, camera, player, projetarFn) {
         const camX = camera ? camera.x : 0;
-        const visL = camX - 280;
-        const visR = camX + W + 280;
+        const camY = camera ? camera.y : 0;
+        const visL = camX - 100;
+        const visR = camX + W + 100;
+        const visT = camY - 100;
+        const visB = camY + H + 100;
 
-        // === SKY STRIP ===
-        const sky = ctx.createLinearGradient(camX, 0, camX, 138);
-        sky.addColorStop(0, "#4ea8dc");
-        sky.addColorStop(0.7, "#98ccee");
-        sky.addColorStop(1, "#bce8d8");
-        ctx.fillStyle = sky; ctx.fillRect(0, 0, MUNDO_ABERTO_WIDTH, 138);
+        // === BASE GROUND COMPLETA ===
+        ctx.fillStyle = "#98c478";
+        ctx.fillRect(0, 0, W, H);
+
+        // Nuvens como sombras no chão (Projetadas)
+        const tShadow = Date.now() / 1500;
         this.cloudsMundo.forEach(c => {
-            if (c.x > visL-100 && c.x < visR+100) this.drawCloud(ctx, c.x, c.y, c.s);
+            const wx = (c.x + tShadow * 40) % (MUNDO_ABERTO_WIDTH + 600) - 300;
+            const wy = c.y;
+            const proj = projetarFn(wx, wy);
+            if (proj.x > -200 && proj.x < W + 200 && proj.y > -200 && proj.y < H + 200) {
+                ctx.fillStyle = "rgba(0, 0, 0, 0.045)";
+                ctx.beginPath();
+                ctx.ellipse(proj.x, proj.y, 220 * c.s * proj.scale, 90 * c.s * proj.scale * 0.5, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
         });
 
-        // Far ground strip
-        ctx.fillStyle = "#92be74"; ctx.fillRect(0, 116, MUNDO_ABERTO_WIDTH, 28);
-        const hgrd = ctx.createLinearGradient(camX, 110, camX, 150);
-        hgrd.addColorStop(0, "rgba(148,205,232,0.78)");
-        hgrd.addColorStop(1, "rgba(146,190,116,0)");
-        ctx.fillStyle = hgrd; ctx.fillRect(camX, 110, W, 40);
+        // Biome Tints (Projected polygons)
+        ctx.lineWidth = 1;
+        const drawBiomeTint = (xStart, xEnd, col) => {
+            ctx.fillStyle = col;
+            ctx.beginPath();
+            const pts = [[xStart, 0], [xEnd, 0], [xEnd, MUNDO_ABERTO_HEIGHT], [xStart, MUNDO_ABERTO_HEIGHT]];
+            pts.forEach(([bx, by], i) => {
+                const proj = projetarFn(bx, by);
+                if (i === 0) ctx.moveTo(proj.x, proj.y);
+                else ctx.lineTo(proj.x, proj.y);
+            });
+            ctx.closePath(); ctx.fill();
+        };
 
-        // === BASE GROUND ===
-        ctx.fillStyle = "#98c478"; ctx.fillRect(0, 124, MUNDO_ABERTO_WIDTH, H);
+        drawBiomeTint(700, 1800, "rgba(100,60,148,0.08)");  // Mushroom
+        drawBiomeTint(1800, 2200, "rgba(80,160,210,0.05)");  // Waterfall / River approach
+        drawBiomeTint(3200, 4200, "rgba(20,10,55,0.11)");    // Bio-forest
+        drawBiomeTint(4200, 5000, "rgba(60,30,0,0.03)");     // Observatory
 
-        // Zone tints (subtle biome differentiation)
-        if (visR > 580 && visL < 1400) { // Mushroom Kingdom: slight purple/mauve tint
-            ctx.fillStyle = "rgba(100,60,148,0.09)";
-            ctx.fillRect(580, 124, 820, H);
-        }
-        if (visR > 1400 && visL < 2050) { // Waterfall: slightly cooler blue-green
-            ctx.fillStyle = "rgba(80,160,210,0.07)";
-            ctx.fillRect(1400, 124, 650, H);
-        }
-        if (visR > 2870 && visL < 3420) { // Bio-forest: darker
-            ctx.fillStyle = "rgba(20,10,55,0.12)";
-            ctx.fillRect(2870, 124, 550, H);
-        }
-        if (visR > 3420 && visL < 4000) { // Observatory plateau: warmer
-            ctx.fillStyle = "rgba(60,30,0,0.04)";
-            ctx.fillRect(3420, 124, 580, H);
-        }
-
-        // Horizon ground stroke
-        ctx.strokeStyle = "#3d2f26"; ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(0,128); ctx.bezierCurveTo(1000,122,2500,126,4000,128); ctx.stroke();
-
-        // === ISOMETRIC GRID ===
+        // === PERSPECTIVE GRID (Converging) ===
         ctx.strokeStyle = "rgba(0,0,0,0.03)"; ctx.lineWidth = 1;
-        const gLeft = Math.max(0, visL);
-        const gRight = Math.min(MUNDO_ABERTO_WIDTH, visR);
-        for (let gy = 148; gy < H; gy += 44) {
-            ctx.beginPath(); ctx.moveTo(gLeft, gy); ctx.lineTo(gRight, gy); ctx.stroke();
+        // Horizontal lines
+        for (let wy = 100; wy < MUNDO_ABERTO_HEIGHT; wy += 150) {
+            const p1 = projetarFn(Math.max(0, camX - 300), wy);
+            const p2 = projetarFn(Math.min(MUNDO_ABERTO_WIDTH, camX + W + 300), wy);
+            ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
         }
-        ctx.strokeStyle = "rgba(0,0,0,0.018)";
-        for (let gx = Math.floor(visL/88)*88; gx < visR+88; gx += 88) {
-            ctx.beginPath(); ctx.moveTo(gx,128); ctx.lineTo(gx+350,H); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(gx,128); ctx.lineTo(gx-350,H); ctx.stroke();
+        // Vertical lines
+        ctx.strokeStyle = "rgba(0,0,0,0.016)";
+        const startX = Math.floor(Math.max(0, camX - 300) / 150) * 150;
+        const endX = Math.min(MUNDO_ABERTO_WIDTH, camX + W + 300);
+        for (let wx = startX; wx <= endX; wx += 150) {
+            const p1 = projetarFn(wx, 0);
+            const p2 = projetarFn(wx, MUNDO_ABERTO_HEIGHT);
+            ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
         }
 
-        // ── ZONE 1: PRADO DE ENTRADA (x 0-580) ──────────────────────────────
-        if (visR > 0 && visL < 580) {
-            // Wildflowers scattered
-            [[85,278],[148,350],[218,262],[310,318],[415,282],[515,335]].forEach(([fx,fy]) => {
-                if (fx<visL||fx>visR) return;
-                ctx.fillStyle="#e07a5f"; ctx.strokeStyle="#3d2f26"; ctx.lineWidth=1;
-                ctx.beginPath(); ctx.arc(fx,fy,5,0,Math.PI*2); ctx.fill(); ctx.stroke();
-                ctx.fillStyle="#f2cc8f"; ctx.beginPath(); ctx.arc(fx,fy,2,0,Math.PI*2); ctx.fill();
-                ctx.strokeStyle="#2a9d8f"; ctx.beginPath(); ctx.moveTo(fx,fy+5); ctx.lineTo(fx-2,fy+14); ctx.stroke();
-            });
+        // ── ZONE 1: PRADO DE ENTRADA (Wildflowers flat on ground) ──────────
+        [[100, 1200], [120, 1230], [140, 1210],
+         [440, 1700], [460, 1680], [480, 1720]].forEach(([fx,fy]) => {
+            const proj = projetarFn(fx, fy);
+            if (proj.x > -20 && proj.x < W + 20 && proj.y > -20 && proj.y < H + 20) {
+                const fs = 5 * proj.scale;
+                ctx.fillStyle = "#e07a5f"; ctx.strokeStyle = "#3d2f26"; ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.arc(proj.x, proj.y, fs, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = "#f2cc8f"; ctx.beginPath(); ctx.arc(proj.x, proj.y, fs*0.4, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = "#2a9d8f"; ctx.beginPath(); ctx.moveTo(proj.x, proj.y + fs); ctx.lineTo(proj.x - 2*proj.scale, proj.y + 12*proj.scale); ctx.stroke();
+            }
+        });
 
-            // Garden patch (Serrano's tomato plot, from above)
-            if (visR > 175 && visL < 330) {
-                ctx.fillStyle="#a17c66"; ctx.strokeStyle="#3d2f26"; ctx.lineWidth=2;
-                ctx.beginPath(); ctx.roundRect(175, 400, 130, 80, 6); ctx.fill(); ctx.stroke();
-                ctx.lineWidth=1.5;
-                ctx.beginPath(); ctx.moveTo(240,400); ctx.lineTo(240,480); ctx.moveTo(175,440); ctx.lineTo(305,440); ctx.stroke();
-                // Tomatoes (top-down circles)
-                [[205,420],[275,420],[205,458],[275,458]].forEach(([tx,ty]) => {
-                    ctx.fillStyle="#e76f51"; ctx.strokeStyle="#3d2f26"; ctx.lineWidth=1;
-                    ctx.beginPath(); ctx.arc(tx,ty,7,0,Math.PI*2); ctx.fill(); ctx.stroke();
-                    ctx.fillStyle="#2a9d8f";
-                    ctx.beginPath(); ctx.arc(tx,ty-8,3.5,0,Math.PI*2); ctx.fill();
-                });
-                // Watering can icon near garden
-                ctx.fillStyle="#4a90d9"; ctx.strokeStyle="#3d2f26"; ctx.lineWidth=2;
-                ctx.beginPath(); ctx.roundRect(312,415,24,16,4); ctx.fill(); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(336,418); ctx.lineTo(345,415); ctx.lineTo(342,420); ctx.stroke();
+        // ── ZONE 2: COGUMELOS (Fairy ring ground circles and glow) ─────────
+        const ring1 = {cx:1400, cy:900, r:92};
+        ctx.strokeStyle = "rgba(100,50,158,0.12)"; ctx.lineWidth = 24;
+        this.drawProjectedLake(ctx, ring1.cx, ring1.cy, ring1.r, ring1.r * 0.7, projetarFn);
+        ctx.stroke();
+
+        // Magical ground glow
+        const glt = Date.now()/950;
+        const glowAlpha = 0.055+Math.sin(glt)*0.028;
+        ctx.fillStyle = `rgba(140,70,200,${glowAlpha})`;
+        this.drawProjectedLake(ctx, 1400, 900, 380, 260, projetarFn);
+        ctx.fill();
+
+        // Floating spore particles (flat on ground, projected)
+        const st = Date.now()/480;
+        for (let i=0; i<12; i++) {
+            const sx = 1100 + i*60 + Math.sin(st + i*1.4)*28;
+            const sy = 700 + Math.cos(st*0.75 + i)*45;
+            const proj = projetarFn(sx, sy);
+            if (proj.x > 0 && proj.x < W && proj.y > 0 && proj.y < H) {
+                ctx.fillStyle = `rgba(190,130,230,${0.45+Math.sin(st+i)*0.22})`;
+                ctx.beginPath(); ctx.arc(proj.x, proj.y, 3 * proj.scale, 0, Math.PI*2); ctx.fill();
             }
         }
 
-        // ── ZONE 2: REINO DOS COGUMELOS (x 580-1400) ─────────────────────────
-        if (visR > 580 && visL < 1400) {
-            // Fairy ring dark patches on ground
-            const ring1 = {cx:785, cy:340, r:92};
-            const ring2 = {cx:1105, cy:430, r:115};
-            [ring1, ring2].forEach(ring => {
-                ctx.strokeStyle = "rgba(100,50,158,0.16)"; ctx.lineWidth = 28;
-                ctx.beginPath(); ctx.arc(ring.cx, ring.cy, ring.r, 0, Math.PI*2); ctx.stroke();
-                ctx.strokeStyle = "rgba(100,50,158,0.07)"; ctx.lineWidth = 55;
-                ctx.beginPath(); ctx.arc(ring.cx, ring.cy, ring.r, 0, Math.PI*2); ctx.stroke();
-            });
+        // ── ZONE 3: CACHOEIRA & RIO ──────────────────────────────────────────
+        // Riverbed
+        ctx.fillStyle = "#888878"; ctx.strokeStyle = "#3d2f26"; ctx.lineWidth = 2.5;
+        this.drawProjectedLake(ctx, 2700, 1500, 520, 340, projetarFn);
+        ctx.stroke(); // Draw shoreline boundary
 
-            // Magical ground glow
-            const glt = Date.now()/950;
-            const glowAlpha = 0.055+Math.sin(glt)*0.028;
-            ctx.fillStyle = `rgba(140,70,200,${glowAlpha})`;
-            ctx.beginPath(); ctx.ellipse(960, 400, 420, 230, 0, 0, Math.PI*2); ctx.fill();
-
-            // Big mushrooms (the star of this zone)
-            // Sort by y so closer ones draw over farther ones (painter's alg)
-            const visibleMushrooms = this.mushrooms.filter(m => m.x > visL-m.r && m.x < visR+m.r);
-            visibleMushrooms.sort((a,b) => a.y - b.y);
-            visibleMushrooms.forEach(m => {
-                const alpha = 0.30 + Math.sin(glt + m.phase)*0.22;
-                this.drawMushroomTopDown(ctx, m.x, m.y, m.r, m.cor, alpha);
-            });
-
-            // Floating spore particles
-            const st = Date.now()/480;
-            for (let i=0; i<8; i++) {
-                const sx = 620+i*100+Math.sin(st+i*1.4)*28;
-                const sy = 180+Math.cos(st*0.75+i)*45;
-                if (sx>visL && sx<visR) {
-                    ctx.fillStyle = `rgba(190,130,230,${0.45+Math.sin(st+i)*0.22})`;
-                    ctx.beginPath(); ctx.arc(sx, sy, 3, 0, Math.PI*2); ctx.fill();
-                    // Tiny mushroom mini spore
-                    ctx.fillStyle = `rgba(190,130,230,${0.15+Math.sin(st+i)*0.1})`;
-                    ctx.beginPath(); ctx.arc(sx, sy, 9, 0, Math.PI*2); ctx.fill();
-                }
-            }
-
-            // Zone label fade
-            if (visR > 650 && visL < 950) {
-                ctx.fillStyle = "rgba(80,40,120,0.35)";
-                ctx.font = "bold 18px 'Outfit', sans-serif"; ctx.textAlign = "center";
-                ctx.fillText("🍄 Reino dos Cogumelos", 785, 155);
-            }
+        // Waterfall (Behind lake, so top boundary)
+        // Draw river leading from top to lake
+        ctx.fillStyle = "#68c8dc"; ctx.strokeStyle = "#3d2f26"; ctx.lineWidth = 2;
+        const riverPoints = [];
+        for (let ry = 200; ry <= 1200; ry += 100) {
+            riverPoints.push({ x: 2700 + Math.sin(ry/200)*30, y: ry });
         }
+        this.drawProjectedRiver(ctx, riverPoints, 120, projetarFn);
 
-        // ── ZONE 3: CACHOEIRA & RIO (x 1400-2050) ────────────────────────────
-        if (visR > 1400 && visL < 2050) {
-            // Rocky cliff (top-down footprint)
-            ctx.fillStyle = "#888878"; ctx.strokeStyle = "#3d2f26"; ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(1390, 138); ctx.bezierCurveTo(1410,150,1452,144,1490,146);
-            ctx.bezierCurveTo(1530,148,1555,155,1560,162);
-            ctx.lineTo(1560, 260); ctx.lineTo(1390, 260); ctx.closePath(); ctx.fill(); ctx.stroke();
-            // Rock highlights
-            ctx.fillStyle = "#aaa898";
-            ctx.beginPath(); ctx.ellipse(1455, 185, 30, 18, -0.3, 0, Math.PI*2); ctx.fill();
+        // ── ZONE 4: GRANDE LAGO (Projected lake water body) ──────────────────
+        const lakeGrd = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, 400); // we approximate or use local center
+        ctx.fillStyle = "#4ab8d8";
+        this.drawProjectedLake(ctx, 2700, 1500, 500, 320, projetarFn);
+        ctx.fill(); ctx.stroke();
 
-            // Waterfall (animated white stream from above)
-            const wt = Date.now()/130;
-            ctx.strokeStyle = "rgba(165,228,248,0.85)"; ctx.lineWidth = 20;
-            ctx.beginPath();
-            ctx.moveTo(1438, 162);
-            ctx.bezierCurveTo(1445+Math.sin(wt)*6, 235, 1440+Math.sin(wt+1)*5, 350, 1448, 462);
+        // Water ripples
+        const lt = Date.now()/620;
+        [0.35, 0.58, 0.80].forEach((f, i) => {
+            const a = 0.18 - i*0.04;
+            ctx.strokeStyle = `rgba(255,255,255,${a+Math.sin(lt+i)*0.04})`;
+            ctx.lineWidth = 2 * (1 + i * 0.5);
+            this.drawProjectedLake(ctx, 2700, 1500, 500 * f, 320 * f, projetarFn);
             ctx.stroke();
-            ctx.strokeStyle = "rgba(255,255,255,0.55)"; ctx.lineWidth = 9;
-            ctx.beginPath();
-            ctx.moveTo(1440, 162);
-            ctx.bezierCurveTo(1447+Math.sin(wt)*3, 240, 1443+Math.sin(wt+1)*4, 352, 1450, 462);
-            ctx.stroke();
+        });
 
-            // Splash pool (top-down)
-            ctx.fillStyle = "#82dae8"; ctx.strokeStyle = "#3d2f26"; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.ellipse(1460, 490, 62, 38, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-            const rt = (Date.now()/420)%1;
-            ctx.strokeStyle = "rgba(255,255,255,0.45)"; ctx.lineWidth = 1.5;
-            ctx.beginPath(); ctx.ellipse(1460,490, 62*(1+rt*0.45), 38*(1+rt*0.45), 0, 0, Math.PI*2); ctx.stroke();
-            ctx.strokeStyle = "rgba(255,255,255,0.2)"; ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.ellipse(1460,490, 62*(1+rt*0.9), 38*(1+rt*0.9), 0, 0, Math.PI*2); ctx.stroke();
+        // Lily pads (projected)
+        [[2545,1398,13],[2615,1588,16],[2890,1380,12],[2958,1595,15],[2910,1418,11],[2468,1462,14]].forEach(([lx,ly,lr]) => {
+            const proj = projetarFn(lx, ly);
+            const lrs = lr * proj.scale;
+            ctx.fillStyle="#2a9d8f"; ctx.strokeStyle="#1b6a60"; ctx.lineWidth=1.5;
+            ctx.beginPath(); ctx.arc(proj.x, proj.y, lrs, 0.15, Math.PI*2-0.15); ctx.lineTo(proj.x, proj.y); ctx.closePath(); ctx.fill(); ctx.stroke();
+        });
 
-            // River (from waterfall to lake, top-down)
-            ctx.fillStyle = "#68c8dc"; ctx.strokeStyle = "#3d2f26"; ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(1430,505); ctx.bezierCurveTo(1490,545,1600,525,1700,545);
-            ctx.bezierCurveTo(1800,565,1890,554,1980,558);
-            ctx.lineTo(1985,580); ctx.bezierCurveTo(1895,576,1805,578,1705,568);
-            ctx.bezierCurveTo(1605,548,1495,568,1432,530); ctx.closePath(); ctx.fill(); ctx.stroke();
-            // River sparkles
-            const rst = Date.now()/300;
-            [[1530,536],[1640,530],[1760,546],[1880,540]].forEach(([rx,ry],ri) => {
-                const ra = 0.3+Math.sin(rst+ri*0.8)*0.3;
-                ctx.fillStyle = `rgba(255,255,255,${ra})`;
-                ctx.beginPath(); ctx.arc(rx,ry,3,0,Math.PI*2); ctx.fill();
-            });
+        // ── ZONE 5: MERCADO SOLAR (Plaza background tiles) ─────────────────
+        ctx.fillStyle = "rgba(218,200,172,0.22)";
+        ctx.beginPath();
+        const mCorners = [[3550, 1250], [4050, 1250], [4050, 1750], [3550, 1750]];
+        mCorners.forEach(([cx, cy], i) => {
+            const proj = projetarFn(cx, cy);
+            if (i === 0) ctx.moveTo(proj.x, proj.y);
+            else ctx.lineTo(proj.x, proj.y);
+        });
+        ctx.closePath(); ctx.fill();
+
+        // Plaza stone gridlines
+        ctx.strokeStyle = "rgba(175,150,120,0.18)"; ctx.lineWidth = 1.5;
+        for (let d = -200; d <= 200; d += 40) {
+            const p1 = projetarFn(3800 + d, 1500 - 250);
+            const p2 = projetarFn(3800 + d, 1500 + 250);
+            ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+
+            const p3 = projetarFn(3800 - 250, 1500 + d);
+            const p4 = projetarFn(3800 + 250, 1500 + d);
+            ctx.beginPath(); ctx.moveTo(p3.x, p3.y); ctx.lineTo(p4.x, p4.y); ctx.stroke();
         }
 
-        // ── ZONE 4: GRANDE LAGO (x 2050-2650) ────────────────────────────────
-        if (visR > 2050 && visL < 2650) {
-            // Lake body (large, top-down ellipse)
-            const lakeGrd = ctx.createRadialGradient(2350, 440, 0, 2350, 440, 320);
-            lakeGrd.addColorStop(0, "#4ab8d8");
-            lakeGrd.addColorStop(0.62, "#2e9ab8");
-            lakeGrd.addColorStop(1, "#1a7ea8");
-            ctx.fillStyle = lakeGrd; ctx.strokeStyle = "#3d2f26"; ctx.lineWidth = 2.5;
-            ctx.beginPath(); ctx.ellipse(2350, 440, 325, 205, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-
-            // Concentric ripple rings
-            const lt = Date.now()/620;
-            [0.35, 0.58, 0.80].forEach((f, i) => {
-                const a = 0.18 - i*0.04;
-                ctx.strokeStyle = `rgba(255,255,255,${a+Math.sin(lt+i)*0.04})`;
-                ctx.lineWidth = 2;
-                ctx.beginPath(); ctx.ellipse(2350,440, 325*f, 205*f, 0, 0, Math.PI*2); ctx.stroke();
-            });
-
-            // Lily pads (top-down circles with notch)
-            [[2145,398,13],[2215,488,16],[2390,380,12],[2458,495,15],[2510,418,11],[2168,462,14]].forEach(([lx,ly,lr]) => {
-                ctx.fillStyle="#2a9d8f"; ctx.strokeStyle="#1b6a60"; ctx.lineWidth=1.5;
-                ctx.beginPath(); ctx.arc(lx,ly,lr,0.15,Math.PI*2-0.15); ctx.lineTo(lx,ly); ctx.closePath(); ctx.fill(); ctx.stroke();
-                ctx.fillStyle="#f2cc8f";
-                ctx.beginPath(); ctx.arc(lx+3,ly-3,lr*0.3,0,Math.PI*2); ctx.fill();
-            });
-
-            // Koi fish (animated top-down)
-            [[2230,425,8,-0.3,"#e76f51"],[2440,455,7,0.4,"#fff"],[2320,388,6,0,"#e07a5f"]].forEach(([kx,ky,kr,ka,kc],ki) => {
-                const t2 = Date.now()/850+ki;
-                const ax = kx + Math.sin(t2)*85;
-                const ay = ky + Math.cos(t2*0.7)*55;
-                ctx.save(); ctx.translate(ax,ay); ctx.rotate(ka+Math.sin(t2)*0.2);
-                ctx.fillStyle=kc; ctx.strokeStyle="#3d2f26"; ctx.lineWidth=1;
-                ctx.beginPath(); ctx.ellipse(0,0,kr,kr*0.5,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
-                ctx.fillStyle=kc==="fff"?"#e76f51":kc;
-                ctx.beginPath(); ctx.moveTo(-kr,0); ctx.lineTo(-kr-5,-3); ctx.lineTo(-kr-3,0); ctx.lineTo(-kr-5,3); ctx.closePath(); ctx.fill(); ctx.stroke();
-                ctx.restore();
-            });
-
-            // Bridge (top-down: two rails + planks)
-            ctx.strokeStyle="#3d2f26"; ctx.lineWidth=4.5;
-            ctx.beginPath(); ctx.moveTo(2100,400); ctx.lineTo(2600,400); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(2100,430); ctx.lineTo(2600,430); ctx.stroke();
-            ctx.fillStyle="#baa68a";
-            ctx.beginPath(); ctx.rect(2100,402,500,26); ctx.fill();
-            ctx.strokeStyle="#3d2f26"; ctx.lineWidth=1.5;
-            for (let bx=2115; bx<2600; bx+=15) {
-                ctx.beginPath(); ctx.moveTo(bx,400); ctx.lineTo(bx,430); ctx.stroke();
-            }
-            // Rail shadows
-            ctx.strokeStyle="#5a4235"; ctx.lineWidth=3.5;
-            ctx.beginPath(); ctx.moveTo(2100,400); ctx.lineTo(2600,400); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(2100,430); ctx.lineTo(2600,430); ctx.stroke();
-        }
-
-        // ── ZONE 5: MERCADO SOLAR (x 2650-3300) ──────────────────────────────
-        if (visR > 2650 && visL < 3300) {
-            // Cobblestone plaza (from above)
-            ctx.fillStyle = "rgba(218,200,172,0.28)";
-            ctx.beginPath(); ctx.roundRect(2670, 260, 600, 390, 18); ctx.fill();
-            ctx.fillStyle = "#d8c8b5"; ctx.strokeStyle = "rgba(175,150,120,0.28)"; ctx.lineWidth = 1;
-            for (let cx=2680; cx<3260; cx+=30) {
-                for (let cy=268; cy<640; cy+=22) {
-                    const off = Math.floor((cy-268)/22)%2===0 ? 0 : 15;
-                    ctx.beginPath(); ctx.roundRect(cx+off,cy,27,19,4); ctx.fill(); ctx.stroke();
-                }
-            }
-
-            // Market tents (top-down diamond = roof from above)
-            [{x:2750,c:"#e76f51"},{x:2900,c:"#f2cc8f"},{x:3050,c:"#2a9d8f"},{x:3200,c:"#e07a5f"}].forEach(tent => {
-                ctx.fillStyle=tent.c; ctx.strokeStyle="#3d2f26"; ctx.lineWidth=2;
-                ctx.beginPath();
-                ctx.moveTo(tent.x, 275); ctx.lineTo(tent.x+52,325); ctx.lineTo(tent.x,375); ctx.lineTo(tent.x-52,325);
-                ctx.closePath(); ctx.fill(); ctx.stroke();
-                ctx.fillStyle="#5a4235"; ctx.beginPath(); ctx.arc(tent.x,325,5,0,Math.PI*2); ctx.fill();
-                // Bunting
-                ctx.strokeStyle="rgba(255,255,255,0.45)"; ctx.lineWidth=1; ctx.setLineDash([5,5]);
-                ctx.beginPath(); ctx.moveTo(tent.x-48,296); ctx.lineTo(tent.x,318); ctx.lineTo(tent.x+48,296); ctx.stroke();
-                ctx.setLineDash([]);
-            });
-
-            // Barrels (top-down circles)
-            [[2735,408],[2750,392],[2850,416],[2865,398]].forEach(([bx,by]) => {
-                ctx.fillStyle="#8d705c"; ctx.strokeStyle="#3d2f26"; ctx.lineWidth=1.5;
-                ctx.beginPath(); ctx.arc(bx,by,11,0,Math.PI*2); ctx.fill(); ctx.stroke();
-                ctx.strokeStyle="#5a4235"; ctx.lineWidth=1;
-                ctx.beginPath(); ctx.arc(bx,by,6,0,Math.PI*2); ctx.stroke();
-            });
-
-            // Campfire (animated, top-down)
-            const cft = Date.now()/100;
-            ctx.fillStyle="#5a4235"; ctx.strokeStyle="#3d2f26"; ctx.lineWidth=2;
-            ctx.beginPath(); ctx.ellipse(3100,510,18,10,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
-            ctx.fillStyle=`rgba(231,111,81,${0.72+Math.sin(cft)*0.2})`;
-            ctx.beginPath(); ctx.ellipse(3100,510,12,7,0,0,Math.PI*2); ctx.fill();
-            ctx.fillStyle=`rgba(242,204,143,${0.6+Math.cos(cft)*0.22})`;
-            ctx.beginPath(); ctx.ellipse(3100,510,6,3.5,0,0,Math.PI*2); ctx.fill();
-            ctx.fillStyle=`rgba(231,111,81,${0.12+Math.sin(cft)*0.06})`;
-            ctx.beginPath(); ctx.ellipse(3100,510,44,26,0,0,Math.PI*2); ctx.fill();
-        }
-
-        // ── ZONE 6: FLORESTA BIOLUMINESCENTE (x 2870-3450) ───────────────────
-        if (visR > 2870 && visL < 3450) {
-            const glt = Date.now()/880;
-            this.glowPlants.forEach(gp => {
-                if (gp.x<visL||gp.x>visR) return;
-                const a = 0.38+Math.sin(glt+gp.phase)*0.28;
+        // ── ZONE 6: FLORESTA BIOLUMINESCENTE (Glowing ground plants) ───────
+        const glt2 = Date.now()/880;
+        this.glowPlants.forEach(gp => {
+            const proj = projetarFn(gp.x, gp.y);
+            if (proj.x > -50 && proj.x < W + 50 && proj.y > -50 && proj.y < H + 50) {
+                const a = 0.38+Math.sin(glt2+gp.phase)*0.28;
                 const col = gp.hue==='cyan' ? `rgba(0,210,175,${a})` : `rgba(175,80,220,${a})`;
                 ctx.fillStyle = col;
-                ctx.beginPath(); ctx.ellipse(gp.x,gp.y,gp.r,gp.r*0.65,0,0,Math.PI*2); ctx.fill();
-                const col2 = gp.hue==='cyan' ? `rgba(0,210,175,${a*0.2})` : `rgba(175,80,220,${a*0.2})`;
-                ctx.fillStyle = col2;
-                ctx.beginPath(); ctx.ellipse(gp.x,gp.y,gp.r*2.1,gp.r*1.6,0,0,Math.PI*2); ctx.fill();
-            });
+                ctx.beginPath(); ctx.ellipse(proj.x, proj.y, gp.r * proj.scale, gp.r * 0.65 * proj.scale, 0, 0, Math.PI*2); ctx.fill();
+            }
+        });
+
+        // ── ZONE 7: PLATÔ DO OBSERVATÓRIO ────────────────────────────────────
+        ctx.fillStyle="#85a868"; ctx.strokeStyle="#3d2f26"; ctx.lineWidth=2.5;
+        ctx.beginPath();
+        const platCorners = [[4200, 600], [5000, 600], [5000, 1300], [4200, 1300]];
+        platCorners.forEach(([cx, cy], i) => {
+            const proj = projetarFn(cx, cy);
+            if (i === 0) ctx.moveTo(proj.x, proj.y);
+            else ctx.lineTo(proj.x, proj.y);
+        });
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+
+        // Stars over observatory
+        const st2 = Date.now()/330;
+        [[4460,352],[4575,338],[4678,328],[4820,342],[4945,332],[4500,396],[4638,382]].forEach(([sx,sy],i) => {
+            const proj = projetarFn(sx, sy);
+            const sa = 0.38+Math.sin(st2+i*1.35)*0.36;
+            ctx.fillStyle = `rgba(255,240,180,${sa})`;
+            ctx.beginPath(); ctx.arc(proj.x, proj.y, 2.8 * proj.scale, 0, Math.PI*2); ctx.fill();
+        });
+
+        // === BRIDGE (Wooden Planks platform) ===
+        // Draw bridge base as polygon
+        ctx.fillStyle = "#baa68a"; ctx.strokeStyle = "#3d2f26"; ctx.lineWidth = 3;
+        ctx.beginPath();
+        const bridgeCorners = [[2150, 1460], [3250, 1460], [3250, 1540], [2150, 1540]];
+        bridgeCorners.forEach(([bx, by], i) => {
+            const proj = projetarFn(bx, by);
+            if (i === 0) ctx.moveTo(proj.x, proj.y);
+            else ctx.lineTo(proj.x, proj.y);
+        });
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+
+        // Individual planks drawn as lines across the bridge platform
+        ctx.strokeStyle = "#3d2f26"; ctx.lineWidth = 2.5;
+        for (let bx = 2170; bx <= 3230; bx += 20) {
+            const p1 = projetarFn(bx, 1460);
+            const p2 = projetarFn(bx, 1540);
+            ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
         }
 
-        // ── ZONE 7: PLATÔ DO OBSERVATÓRIO (x 3450-4000) ─────────────────────
-        if (visR > 3450 && visL < 4000) {
-            // Raised plateau (darker ground)
-            ctx.fillStyle="#85a868"; ctx.strokeStyle="#3d2f26"; ctx.lineWidth=2;
-            ctx.beginPath();
-            ctx.moveTo(3435,152); ctx.bezierCurveTo(3580,135,3780,128,3960,138);
-            ctx.lineTo(4050,180); ctx.lineTo(4050,H); ctx.lineTo(3435,H); ctx.closePath();
-            ctx.fill(); ctx.stroke();
-
-            // Observatory dome (top-down circle)
-            ctx.fillStyle="#c8d8d0"; ctx.strokeStyle="#3d2f26"; ctx.lineWidth=2.5;
-            ctx.beginPath(); ctx.arc(3730,295,58,0,Math.PI*2); ctx.fill(); ctx.stroke();
-            // Dome slit
-            ctx.strokeStyle="#3d2f26"; ctx.lineWidth=3;
-            ctx.beginPath(); ctx.moveTo(3730,237); ctx.lineTo(3730,353); ctx.stroke();
-            // Telescope (top-down rotated rectangle)
-            ctx.fillStyle="#8d9d98";
-            ctx.save(); ctx.translate(3730,286); ctx.rotate(Math.PI*0.28);
-            ctx.beginPath(); ctx.roundRect(-6,-32,12,62,4); ctx.fill(); ctx.stroke();
-            ctx.restore();
-            // Dome outer ring
-            ctx.strokeStyle="rgba(100,140,130,0.35)"; ctx.lineWidth=14;
-            ctx.beginPath(); ctx.arc(3730,295,75,0,Math.PI*2); ctx.stroke();
-
-            // Solar panels on plateau
-            [[3530,360],[3592,342],[3656,330],[3535,408],[3598,390]].forEach(([px,py]) => {
-                ctx.fillStyle="#1e6051"; ctx.strokeStyle="#3d2f26"; ctx.lineWidth=1.5;
-                ctx.beginPath(); ctx.rect(px,py,44,27); ctx.fill(); ctx.stroke();
-                ctx.strokeStyle="#48bcae"; ctx.lineWidth=1;
-                ctx.beginPath(); ctx.moveTo(px+15,py); ctx.lineTo(px+15,py+27); ctx.moveTo(px+29,py); ctx.lineTo(px+29,py+27); ctx.stroke();
-            });
-
-            // Stars (near observatory)
-            const st = Date.now()/330;
-            [[3460,152],[3575,138],[3678,128],[3820,142],[3945,132],[3500,196],[3638,182]].forEach(([sx,sy],i) => {
-                const sa = 0.38+Math.sin(st+i*1.35)*0.36;
-                ctx.fillStyle = `rgba(255,240,180,${sa})`;
-                ctx.beginPath(); ctx.arc(sx,sy,2.8,0,Math.PI*2); ctx.fill();
-                ctx.strokeStyle = `rgba(255,240,180,${sa*0.4})`; ctx.lineWidth=0.8;
-                for (let r=0;r<4;r++) {
-                    ctx.save(); ctx.translate(sx,sy); ctx.rotate(r*Math.PI/2);
-                    ctx.beginPath(); ctx.moveTo(0,-4.5); ctx.lineTo(0,4.5); ctx.stroke();
-                    ctx.restore();
-                }
-            });
-        }
-
-        // === AC TREES (all zones, sorted by y for depth) ===
-        const visibleTrees = this.treesMA.filter(t => t.x > visL-30 && t.x < visR+30);
-        visibleTrees.sort((a,b) => a.y-b.y);
-        visibleTrees.forEach(t => this.drawACTree(ctx, t.x, t.y, t.s));
-
-        // === GRASS TUFTS ===
+        // === GRASS TUFTS (Flat ground assets) ===
         this.grassTuftsMA.forEach(t => {
-            if (t.x<visL||t.x>visR||t.y<142) return;
-            this.drawGrassTuft(ctx, t.x, t.y, t.scale);
+            const proj = projetarFn(t.x, t.y);
+            if (proj.x > -20 && proj.x < W + 20 && proj.y > -20 && proj.y < H + 20) {
+                this.drawGrassTuft(ctx, proj.x, proj.y, proj.scale * t.scale);
+            }
         });
 
-        // === BUSHES ===
-        this.bushesMA.forEach(b => {
-            if (b.x<visL-30||b.x>visR+30) return;
-            this.drawBush(ctx, b.x, b.y, b.s);
-        });
-
-        // === MAIN WINDING PATH ===
-        ctx.fillStyle="#eedfd2"; ctx.strokeStyle="#3d2f26"; ctx.lineWidth=1.8;
-        for (let px=90; px<3950; px+=68) {
-            if (px<visL-50||px>visR+50) continue;
-            // Skip lake zone (bridge handles it) and waterfall pool
-            if (px>2100 && px<2600) continue;
-            if (px>1445 && px<1490) continue;
-            const py = 512+Math.sin(px*0.011)*58+Math.sin(px*0.026)*28;
-            if (py<142) continue;
-            const t2 = (py-512)/200;
-            const sw = 22+t2*4; const sh = 12+t2*3;
-            ctx.beginPath(); ctx.roundRect(px-sw/2,py-sh/2,sw,sh,5); ctx.fill(); ctx.stroke();
-        }
-        // Bridge path stones
-        ctx.fillStyle="#eedfd2"; ctx.strokeStyle="#3d2f26"; ctx.lineWidth=1.8;
-        for (let bx=2115; bx<2590; bx+=20) {
-            ctx.beginPath(); ctx.roundRect(bx,403,16,22,3); ctx.fill(); ctx.stroke();
+        // === MAIN ORGANIZED COBBLESTONE PATHS ===
+        ctx.fillStyle = "#eedfd2"; ctx.strokeStyle = "#baa68a"; ctx.lineWidth = 1.5;
+        // Horizontal road
+        for (let px = 0; px < MUNDO_ABERTO_WIDTH; px += 45) {
+            if (px > 2150 && px < 3250) continue; // Skip lake / bridge span
+            this.drawPathTile(ctx, px, 1500, 20, projetarFn);
         }
 
-        // === LEFT EXIT ===
-        ctx.fillStyle="rgba(42,157,143,0.18)"; ctx.strokeStyle="#2a9d8f"; ctx.lineWidth=2;
+        // Branch to Garden
+        for (let py = 1040; py < 1470; py += 30) {
+            this.drawPathTile(ctx, 600, py, 14, projetarFn);
+        }
+        
+        // Branch to Mushrooms
+        for (let py = 950; py < 1470; py += 30) {
+            this.drawPathTile(ctx, 1400, py, 14, projetarFn);
+        }
+        
+        // Branch to Market
+        for (let py = 1350; py < 1470; py += 30) {
+            this.drawPathTile(ctx, 3800, py, 14, projetarFn);
+        }
+ 
+        // Branch to Observatory
+        for (let py = 1000; py < 1470; py += 30) {
+            this.drawPathTile(ctx, 4500, py, 14, projetarFn);
+        }
+
+        // === LEFT EXIT INDICATOR (Projected box) ===
+        ctx.fillStyle="rgba(42,157,143,0.14)"; ctx.strokeStyle="#2a9d8f"; ctx.lineWidth=2.5;
         ctx.setLineDash([6,4]);
-        ctx.beginPath(); ctx.rect(0,320,44,280); ctx.fill(); ctx.stroke();
+        ctx.beginPath();
+        const leftExit = [[0, 1100], [50, 1100], [50, 1900], [0, 1900]];
+        leftExit.forEach(([ex, ey], i) => {
+            const proj = projetarFn(ex, ey);
+            if (i === 0) ctx.moveTo(proj.x, proj.y);
+            else ctx.lineTo(proj.x, proj.y);
+        });
+        ctx.closePath(); ctx.fill(); ctx.stroke();
         ctx.setLineDash([]);
-        ctx.fillStyle="#2a9d8f"; ctx.font="bold 11px sans-serif"; ctx.textAlign="center";
-        ctx.save(); ctx.translate(22,460); ctx.rotate(-Math.PI/2);
+
+        const textProj = projetarFn(25, 1500);
+        ctx.fillStyle="#2a9d8f"; ctx.font="bold " + Math.round(11 * textProj.scale) + "px sans-serif"; ctx.textAlign="center";
+        ctx.save(); ctx.translate(textProj.x, textProj.y); ctx.rotate(-Math.PI/2);
         ctx.fillText("← PÁTIO",0,0); ctx.restore();
 
-        // Map title
+        // Static UI Title
         ctx.fillStyle="#3d2f26"; ctx.font="bold 16px 'Outfit', sans-serif"; ctx.textAlign="left";
-        ctx.fillText("🌍 Jabuli World: Mundo Aberto", camX+40, 45);
+        ctx.fillText("🌍 Jabuli World: Mundo Aberto", 40, 45);
     }
 
-    // Bridge front rail (minimal in top-down view - just depth shadow on south edge)
-    drawBridgeFront(ctx) {
+    // Bridge front rail (Drawn relative to projected world bridge coordinates)
+    drawBridgeFront(ctx, projetarFn) {
         ctx.fillStyle = "rgba(0,0,0,0.07)";
-        ctx.beginPath(); ctx.rect(2100, 428, 500, 8); ctx.fill();
-        ctx.strokeStyle = "#5a4235"; ctx.lineWidth = 3.5;
-        ctx.beginPath(); ctx.moveTo(2100,430); ctx.lineTo(2600,430); ctx.stroke();
+        ctx.beginPath();
+        const shadowCorners = [[2150, 1538], [3250, 1538], [3250, 1546], [2150, 1546]];
+        shadowCorners.forEach(([bx, by], i) => {
+            const proj = projetarFn(bx, by);
+            if (i === 0) ctx.moveTo(proj.x, proj.y);
+            else ctx.lineTo(proj.x, proj.y);
+        });
+        ctx.closePath(); ctx.fill();
+
+        ctx.strokeStyle = "#5a4235"; ctx.lineWidth = 4;
+        for (let bx = 2150; bx <= 3250; bx += 25) {
+            const pBase = projetarFn(bx, 1540);
+            const pTop = projetarFn(bx, 1540); // we will offset screen space or project with virtual Y
+            // draw vertical post
+            ctx.beginPath();
+            ctx.moveTo(pBase.x, pBase.y);
+            ctx.lineTo(pBase.x, pBase.y - 12 * pBase.scale);
+            ctx.stroke();
+        }
+        // Top rail connecting posts
+        ctx.beginPath();
+        const steps = 40;
+        for (let i = 0; i <= steps; i++) {
+            const bx = 2150 + (i / steps) * 1100;
+            const p = projetarFn(bx, 1540);
+            if (i === 0) ctx.moveTo(p.x, p.y - 12 * p.scale);
+            else ctx.lineTo(p.x, p.y - 12 * p.scale);
+        }
+        ctx.stroke();
     }
 }

@@ -1,4 +1,4 @@
-import { bancoCodigos } from '../constants.js';
+import { bancoCodigos, obterSpriteTintada, obterSprite } from '../constants.js';
 import { renderizarGeometriaGota, renderizarChapeuGenerico } from '../entities/Player.js';
 
 export class UIManager {
@@ -133,18 +133,51 @@ export class UIManager {
                 const canvasEl = document.getElementById(canvasId);
                 if (canvasEl) {
                     const ctx = canvasEl.getContext('2d');
-                    ctx.clearRect(0, 0, 40, 40);
-                    ctx.fillStyle = selo.cor;
-                    ctx.beginPath();
-                    renderizarGeometriaGota(ctx, 20, 34, 12, selo.morfologia);
-                    ctx.fill();
+                      const drawStamp = () => {
+                        ctx.clearRect(0, 0, 40, 40);
+                        const spriteObj = obterSpriteTintada(selo.nome, selo.cor);
+                        if (spriteObj) {
+                            const config = spriteObj.config;
+                            const sx = (config.larguraTotalImagem - config.larguraJabuli) / 2;
+                            const sy = (config.alturaTotalImagem - config.alturaJabuli) / 2;
+                            const sw = config.larguraJabuli;
+                            const sh = config.alturaJabuli;
+                            
+                            // Distorcer conforme morfologia
+                            let dw = 24;
+                            let dh = 28;
+                            if (selo.morfologia === "longa") {
+                                dw = 20;
+                                dh = 34;
+                            } else if (selo.morfologia === "gorda") {
+                                dw = 30;
+                                dh = 23;
+                            }
+                            
+                            ctx.drawImage(spriteObj.image, sx, sy, sw, sh, 20 - dw / 2, 34 - dh, dw, dh);
+                        } else {
+                            // Se a imagem base ainda não carregou, adicionamos onload nela para redesenhar
+                            const baseSprite = obterSprite("Jabuli Clássico");
+                            if (baseSprite && baseSprite.image) {
+                                baseSprite.image.onload = () => {
+                                    drawStamp();
+                                };
+                            }
+                            
+                            // Fallback vetorial temporário
+                            ctx.fillStyle = selo.cor;
+                            ctx.beginPath();
+                            renderizarGeometriaGota(ctx, 20, 34, 12, selo.morfologia);
+                            ctx.fill();
 
-                    // Olhos
-                    ctx.fillStyle = "#000";
-                    ctx.beginPath();
-                    ctx.arc(16, 24, 1.5, 0, Math.PI * 2);
-                    ctx.arc(24, 24, 1.5, 0, Math.PI * 2);
-                    ctx.fill();
+                            ctx.fillStyle = "#000";
+                            ctx.beginPath();
+                            ctx.arc(16, 24, 1.5, 0, Math.PI * 2);
+                            ctx.arc(24, 24, 1.5, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                    };
+                    drawStamp();
                 }
             }, 20);
         });
@@ -187,29 +220,64 @@ export class UIManager {
             }
 
             const ctx = polaroidCanvas.getContext('2d');
-            ctx.clearRect(0, 0, 120, 120);
+            
+            const drawPolaroid = () => {
+                ctx.clearRect(0, 0, 120, 120);
 
-            // Sombra
-            ctx.fillStyle = "rgba(0,0,0,0.04)";
-            ctx.beginPath();
-            ctx.ellipse(60, 100, 24, 6, 0, 0, Math.PI * 2);
-            ctx.fill();
+                // Sombra
+                ctx.fillStyle = "rgba(0,0,0,0.04)";
+                ctx.beginPath();
+                ctx.ellipse(60, 100, 24, 6, 0, 0, Math.PI * 2);
+                ctx.fill();
 
-            // Gota
-            ctx.fillStyle = selo.cor;
-            ctx.beginPath();
-            renderizarGeometriaGota(ctx, 60, 95, 24, selo.morfologia);
-            ctx.fill();
+                const spriteObj = obterSpriteTintada(selo.nome, selo.cor);
+                if (spriteObj) {
+                    const config = spriteObj.config;
+                    const sx = (config.larguraTotalImagem - config.larguraJabuli) / 2;
+                    const sy = (config.alturaTotalImagem - config.alturaJabuli) / 2;
+                    const sw = config.larguraJabuli;
+                    const sh = config.alturaJabuli;
+                    
+                    // Distorcer conforme morfologia
+                    let dw = 60;
+                    let dh = 70;
+                    if (selo.morfologia === "longa") {
+                        dw = 50;
+                        dh = 85;
+                    } else if (selo.morfologia === "gorda") {
+                        dw = 74;
+                        dh = 58;
+                    }
+                    
+                    ctx.drawImage(spriteObj.image, sx, sy, sw, sh, 60 - dw / 2, 95 - dh, dw, dh);
+                    
+                    // Chapéu
+                    renderizarChapeuGenerico(ctx, 60, 95, selo.chapeu, selo.morfologia);
+                } else {
+                    // Se a imagem base ainda não carregou, adicionamos onload nela para redesenhar
+                    const baseSprite = obterSprite("Jabuli Clássico");
+                    if (baseSprite && baseSprite.image) {
+                        baseSprite.image.onload = () => {
+                            drawPolaroid();
+                        };
+                    }
+                    
+                    // Fallback vetorial temporário
+                    ctx.fillStyle = selo.cor;
+                    ctx.beginPath();
+                    renderizarGeometriaGota(ctx, 60, 95, 24, selo.morfologia);
+                    ctx.fill();
 
-            // Olhos
-            ctx.fillStyle = "#000";
-            ctx.beginPath();
-            ctx.arc(54, 76, 2.5, 0, Math.PI * 2);
-            ctx.arc(66, 76, 2.5, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Chapéu
-            renderizarChapeuGenerico(ctx, 60, 95, selo.chapeu, selo.morfologia);
+                    ctx.fillStyle = "#000";
+                    ctx.beginPath();
+                    ctx.arc(54, 76, 2.5, 0, Math.PI * 2);
+                    ctx.arc(66, 76, 2.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    renderizarChapeuGenerico(ctx, 60, 95, selo.chapeu, selo.morfologia);
+                }
+            };
+            drawPolaroid();
         } else {
             polaroidNome.innerText = "???";
             polaroidDesc.innerHTML = `

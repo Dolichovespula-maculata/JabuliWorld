@@ -1,3 +1,5 @@
+import { obterSpriteTintada } from '../constants.js';
+
 export function renderizarGeometriaGota(c, x, y, r, tipoMorfologia) {
     if (tipoMorfologia === "longa") {
         c.moveTo(x, y - 56);
@@ -139,6 +141,9 @@ export class Player {
         this.nomePreset = null; // null significa que nenhum Jabuli está equipado/desbloqueado
         this.textoFala = "";
         this.timerFala = 0;
+        this.facingRight = true;
+        this.isWalking = false;
+        this.walkTime = 0;
     }
 
     update(input, canvasWidth, canvasHeight) {
@@ -166,9 +171,25 @@ export class Player {
         this.x += dx;
         this.y += dy;
 
+        // Atualizar direção horizontal do Jabuli
+        if (dx < 0) {
+            this.facingRight = false;
+        } else if (dx > 0) {
+            this.facingRight = true;
+        }
+
+        // Animação de balanço (wobble) ao andar
+        if (dx !== 0 || dy !== 0) {
+            this.isWalking = true;
+            this.walkTime += 0.15;
+        } else {
+            this.isWalking = false;
+            this.walkTime = 0;
+        }
+
         // Limitar às bordas
         if (this.x < 40) this.x = 40;
-        if (this.y < 280) this.y = 280;
+        if (this.y < 150) this.y = 150;
         if (this.x > canvasWidth - 40) this.x = canvasWidth - 40;
         if (this.y > canvasHeight - 90) this.y = canvasHeight - 90;
     }
@@ -203,41 +224,81 @@ export class Player {
             ctx.clip();
         }
 
-        // Gota
-        ctx.fillStyle = this.cor;
-        ctx.beginPath();
-        renderizarGeometriaGota(ctx, this.x, this.y, this.raio, this.morfologia);
-        ctx.fill();
-        ctx.strokeStyle = "#3d2f26";
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
+        // Gota / Sprite (Usa obterSpriteTintada para suportar cores/presets dinâmicos)
+        const spriteObj = obterSpriteTintada(this.nomePreset, this.cor);
+        
+        ctx.save();
+        ctx.translate(this.x, this.y);
 
-        // Olhos
-        let olhoY = this.y - 18;
-        if (this.morfologia === "longa") olhoY = this.y - 22;
-        if (this.morfologia === "gorda") olhoY = this.y - 14;
+        let wobbleAngle = 0;
+        if (this.isWalking) {
+            wobbleAngle = Math.sin(this.walkTime) * 0.08;
+        }
+        ctx.rotate(wobbleAngle);
 
-        ctx.fillStyle = "#1e1b1a";
-        ctx.beginPath();
-        ctx.arc(this.x - 6, olhoY, 3, 0, Math.PI * 2);
-        ctx.arc(this.x + 6, olhoY, 3, 0, Math.PI * 2);
-        ctx.fill();
+        if (spriteObj && spriteObj.image) {
+            const config = spriteObj.config;
+            const sx = (config.larguraTotalImagem - config.larguraJabuli) / 2;
+            const sy = (config.alturaTotalImagem - config.alturaJabuli) / 2;
+            const sw = config.larguraJabuli;
+            const sh = config.alturaJabuli;
+            
+            // Distorcer com base na morfologia (mudar o formato/tamanho)
+            let dw = config.larguraDesenho;
+            let dh = config.alturaDesenho;
+            if (this.morfologia === "longa") {
+                dw = 42;
+                dh = 72;
+            } else if (this.morfologia === "gorda") {
+                dw = 62;
+                dh = 48;
+            }
 
-        // Chapéu (só desenha se tiver preset ativo)
+            ctx.save();
+            if (!this.facingRight) {
+                ctx.scale(-1, 1);
+            }
+            ctx.drawImage(spriteObj.image, sx, sy, sw, sh, -dw / 2, -dh, dw, dh);
+            ctx.restore();
+        } else {
+            // Desenhar gota vetorial original como fallback (no ponto central 0, 0)
+            ctx.fillStyle = this.cor;
+            ctx.beginPath();
+            renderizarGeometriaGota(ctx, 0, 0, this.raio, this.morfologia);
+            ctx.fill();
+            ctx.strokeStyle = "#3d2f26";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            // Olhos
+            let olhoY = -18;
+            if (this.morfologia === "longa") olhoY = -22;
+            if (this.morfologia === "gorda") olhoY = -14;
+
+            ctx.fillStyle = "#1e1b1a";
+            ctx.beginPath();
+            ctx.arc(-6, olhoY, 3, 0, Math.PI * 2);
+            ctx.arc(6, olhoY, 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Chapéu (só desenha se tiver preset ativo, acoplado ao balanço em 0,0)
         if (this.nomePreset) {
-            renderizarChapeuGenerico(ctx, this.x, this.y, this.chapeuEquipado, this.morfologia);
+            renderizarChapeuGenerico(ctx, 0, 0, this.chapeuEquipado, this.morfologia);
         } else {
             // Desenhar cadeado na barriga do Jabuli bloqueado
-            let lockY = this.y - 8;
-            if (this.morfologia === "longa") lockY = this.y - 12;
-            if (this.morfologia === "gorda") lockY = this.y - 6;
+            let lockY = -8;
+            if (this.morfologia === "longa") lockY = -12;
+            if (this.morfologia === "gorda") lockY = -6;
 
             ctx.fillStyle = "#3d2f26";
             ctx.font = "14px Arial";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillText("🔒", this.x, lockY);
+            ctx.fillText("🔒", 0, lockY);
         }
+
+        ctx.restore(); // Restaura a translação e rotação
 
         if (this.noLago) {
             ctx.restore();
