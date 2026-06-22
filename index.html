@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jabuli World - Premium Estável</title>
+    <link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+
+    <div id="game-container">
+        <canvas id="gameCanvas" width="1280" height="720"></canvas>
+        
+        <!-- HUD -->
+        <div id="ui-bottom-bar">
+            <div id="chat-input-wrapper">
+                <input type="text" id="chat-input" placeholder="Converse com outros bichinhos..." autocomplete="off"/>
+                <button id="chat-send" onclick="enviarMensagem()">Falar</button>
+            </div>
+            <div id="ui-buttons-group">
+                <button class="ui-btn ui-btn-home" id="btn-home" onclick="irParaMapa('meu_jardim')" style="display: none;">🏡 Voltar ao Pátio</button>
+                <button class="ui-btn" id="btn-go-openworld" onclick="irParaMapa('mundo_aberto')">🚪 Ir para Mundo Aberto</button>
+                <button class="ui-btn" onclick="toggleMenu('vitrine')">🖼️ Álbum de Selos</button>
+            </div>
+        </div>
+        
+        <!-- CUSTOMIZADORA (CASINHA DE ÁRVORE) -->
+        <div id="menu-customizadora" class="game-menu">
+            <div class="menu-drag-zone">
+                <span>🎨 Casinha de Árvore</span>
+                <button class="btn-close-window" onclick="fecharJanela('customizadora')">X</button>
+            </div>
+            <div class="menu-content">
+                <p style="font-size: 13px; color: #5a4235; margin: 0; text-align: center; font-style: italic;">Insira o código do seu brinquedo físico feito pelo Ryan:</p>
+                <input type="text" id="code-input" placeholder="EX: BONECO-01" style="padding: 10px; border: 2px solid #baa68a; border-radius: 10px; outline: none; text-align: center;" autocomplete="off"/>
+                <button class="btn-action" onclick="resgatarCodigo()">Resgatar Brinquedo</button>
+                <div id="custom-status" style="font-size: 12px; color: #7a6a60; text-align: center;">Pronto para resgatar.</div>
+            </div>
+        </div>
+
+        <!-- VITRINE (ÁLBUM DE SELOS E SELETOR DE JABULIS) -->
+        <div id="menu-vitrine" class="game-menu" style="width: 800px;">
+            <div class="menu-drag-zone">
+                <span>📖 Álbum de Colecionáveis de Ryan</span>
+                <button class="btn-close-window" onclick="fecharJanela('vitrine')">X</button>
+            </div>
+            <div class="menu-content" style="padding: 0;">
+                <div class="stamp-book-container">
+                    <div class="stamp-book-binder"></div>
+                    
+                    <!-- PÁGINA ESQUERDA: Selos/Coleção -->
+                    <div class="stamp-book-page page-left">
+                        <h3 style="margin-top: 0; color: #5a4235; border-bottom: 2px solid #eddcd2; padding-bottom: 8px; font-size: 16px;">Sua Coleção de Selos</h3>
+                        <div class="stamp-grid" id="vitrine-lista-selos">
+                            <!-- Os slots dos selos serão gerados dinamicamente via UIManager.js -->
+                        </div>
+                    </div>
+                    
+                    <!-- PÁGINA DIREITA: Polaroid e Equipamento -->
+                    <div class="stamp-book-page page-right">
+                        <div class="polaroid-tape"></div>
+                        <div class="polaroid-card">
+                            <div class="polaroid-photo-frame">
+                                <canvas id="canvas-vitrine-polaroid" width="120" height="120"></canvas>
+                            </div>
+                            <div class="polaroid-title" id="polaroid-nome-selo">Selecione um Selo</div>
+                        </div>
+                        <div class="handwritten-notes" id="polaroid-desc-selo">
+                            Passe o mouse pelos selos do seu álbum para ver a descrição, ou clique em um selo desbloqueado para examiná-lo e equipá-lo!
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LORE E QUADRINHOS DOS NPCS -->
+        <div id="menu-lore" class="game-menu" style="width: 600px; height: 500px; display: none;">
+            <div class="menu-drag-zone">
+                <span id="lore-menu-title">📖 Lore do Jabuli</span>
+                <button class="btn-close-window" onclick="fecharJanela('lore')">X</button>
+            </div>
+            <div class="menu-content" style="padding: 20px; overflow-y: auto; height: 420px; box-sizing: border-box;">
+                <!-- Informações do Criador e Inspiração -->
+                <div style="display: flex; gap: 15px; border-bottom: 2px dashed rgba(61,47,38,0.15); padding-bottom: 15px; margin-bottom: 15px;">
+                    <div id="lore-avatar-frame" style="width: 70px; height: 70px; background: rgba(0,0,0,0.05); border: 2.5px solid #3d2f26; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                        <canvas id="canvasLoreNPC" width="60" height="60"></canvas>
+                    </div>
+                    <div style="display: flex; flex-direction: column; justify-content: center; gap: 4px;">
+                        <h3 id="lore-npc-name" style="margin: 0; color: #e76f51; font-size: 20px; font-weight: 800;">Nome do Jabuli</h3>
+                        <div style="font-size: 13px; color: #5a4235;"><b>Criado por:</b> <span id="lore-npc-creator">Ryan</span></div>
+                        <div style="font-size: 13px; color: #5a4235;"><b>Código para Desbloquear:</b> <code id="lore-npc-code" style="background: #eedfd2; padding: 2px 6px; border-radius: 4px; font-weight: bold; border: 1px solid #baa68a;">BONECO-XX</code></div>
+                    </div>
+                </div>
+                
+                <!-- Descrição e Inspiração -->
+                <div style="background: #fdf0d5; border: 2px solid #baa68a; border-radius: 12px; padding: 12px; margin-bottom: 15px; font-family: var(--sp-font-hand); font-size: 15px; color: #5a4235; line-height: 1.5; font-style: italic;">
+                    "&nbsp;<span id="lore-npc-insp">Esta é a inspiração do boneco...</span>&nbsp;"
+                </div>
+
+                <!-- Quadrinhos feitos sobre ela -->
+                <h4 style="margin-top: 0; margin-bottom: 10px; color: #2a9d8f; font-size: 16px; font-weight: 800;">📚 Aventuras & Quadrinhos</h4>
+                <div id="lore-npc-comic-container" class="lore-comic-container" style="background: white; border: 3px solid #3d2f26; border-radius: 12px; padding: 12px; box-shadow: 0 4px 0 #3d2f26; height: 180px; overflow-y: auto; font-size: 13px; line-height: 1.6; color: #2b1f1a; box-sizing: border-box;">
+                    <!-- Conteúdo do quadrinho gerado via javascript -->
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module" src="./src/main.js"></script>
+</body>
+</html>
