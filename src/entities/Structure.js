@@ -1,4 +1,5 @@
 import { renderizarGeometriaGota, renderizarChapeuGenerico } from './Player.js';
+import { obterSpriteTintada, obterSprite } from '../constants.js';
 
 export class Structure {
     constructor(id, x, y, tipo, nome, raio) {
@@ -17,18 +18,45 @@ export class Structure {
         return distancia < this.raio;
     }
 
-    draw(ctx, anguloBalanco, player) {
+    draw(ctx, anguloBalanco, player, pontoLuz) {
+        // 1. Desenhar sombra matemática projetada
+        ctx.save();
+
+        let skewX = -0.6;
+        let scaleY = -0.25;
+        if (pontoLuz) {
+            const dx = this.x - pontoLuz.x;
+            const dy = (this.y + 30) - pontoLuz.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            skewX = (dx / dist) * 0.55;
+            scaleY = -(dy / dist) * 0.28;
+        }
+
+        ctx.translate(this.x, this.y + 30);
+        ctx.transform(1, 0, skewX, scaleY, 0, 0);
+        ctx.translate(-this.x, -(this.y + 30));
+        ctx.filter = "brightness(0) opacity(0.14)";
+        this.drawGeometry(ctx, anguloBalanco, player, true);
+        ctx.restore();
+
+        // 2. Desenhar a estrutura real
+        this.drawGeometry(ctx, anguloBalanco, player, false);
+    }
+
+    drawGeometry(ctx, anguloBalanco, player, isShadow) {
         // Configuração de Contorno (Traço de desenho à mão)
-        ctx.strokeStyle = "#3d2f26";
+        ctx.strokeStyle = isShadow ? "transparent" : "#3d2f26";
         ctx.lineWidth = 2.5;
         ctx.lineJoin = "round";
         ctx.lineCap = "round";
 
         // Sombra da base
-        ctx.fillStyle = "rgba(42, 157, 143, 0.08)";
-        ctx.beginPath();
-        ctx.ellipse(this.x, this.y + 45, this.raio, 18, 0, 0, Math.PI*2);
-        ctx.fill();
+        if (!isShadow) {
+            ctx.fillStyle = "rgba(42, 157, 143, 0.08)";
+            ctx.beginPath();
+            ctx.ellipse(this.x, this.y + 45, this.raio, 18, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
         if (this.tipo === "loja") {
             // REDESENHO: Carrinho Cozy de Comida Solarpunk
@@ -36,7 +64,7 @@ export class Structure {
             // Roda do Carrinho
             ctx.fillStyle = "#8d705c";
             ctx.beginPath();
-            ctx.arc(this.x - 35, this.y + 35, 18, 0, Math.PI*2);
+            ctx.arc(this.x - 35, this.y + 35, 18, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
 
@@ -84,14 +112,14 @@ export class Structure {
             // Itens dentro da cesta
             ctx.fillStyle = "#e76f51"; // Maçãs vermelhas
             ctx.beginPath();
-            ctx.arc(this.x - 42, this.y - 25, 4, 0, Math.PI*2);
-            ctx.arc(this.x - 35, this.y - 25, 4, 0, Math.PI*2);
-            ctx.arc(this.x - 22, this.y - 25, 4, 0, Math.PI*2);
+            ctx.arc(this.x - 42, this.y - 25, 4, 0, Math.PI * 2);
+            ctx.arc(this.x - 35, this.y - 25, 4, 0, Math.PI * 2);
+            ctx.arc(this.x - 22, this.y - 25, 4, 0, Math.PI * 2);
             ctx.fill();
 
             ctx.fillStyle = "#2a9d8f"; // Verduras
             ctx.beginPath();
-            ctx.arc(this.x - 28, this.y - 26, 5, 0, Math.PI*2);
+            ctx.arc(this.x - 28, this.y - 26, 5, 0, Math.PI * 2);
             ctx.fill();
 
             // Panela de Vapor (Buns)
@@ -100,7 +128,7 @@ export class Structure {
             ctx.roundRect(this.x + 10, this.y - 32, 40, 18, 4);
             ctx.fill();
             ctx.stroke();
-            
+
             // Tampa
             ctx.beginPath();
             ctx.moveTo(this.x + 10, this.y - 32);
@@ -133,7 +161,7 @@ export class Structure {
             ctx.beginPath();
             ctx.moveTo(this.x - 45, this.y - 58); ctx.lineTo(this.x - 35, this.y - 72);
             ctx.moveTo(this.x - 25, this.y - 58); ctx.lineTo(this.x - 15, this.y - 72);
-            ctx.moveTo(this.x - 5, this.y - 58);  ctx.lineTo(this.x + 5, this.y - 72);
+            ctx.moveTo(this.x - 5, this.y - 58); ctx.lineTo(this.x + 5, this.y - 72);
             ctx.moveTo(this.x + 15, this.y - 58); ctx.lineTo(this.x + 25, this.y - 72);
             ctx.moveTo(this.x + 35, this.y - 58); ctx.lineTo(this.x + 45, this.y - 72);
             ctx.stroke();
@@ -148,21 +176,21 @@ export class Structure {
             ctx.lineTo(this.x - 55, this.y - 75);
             ctx.closePath();
             ctx.stroke();
-        } 
+        }
         else if (this.tipo === "custom") {
             // REDESENHO: Casinha de Árvore (Hollow Tree Stump House)
-            
+
             // Sombra da base
             ctx.fillStyle = "rgba(42, 157, 143, 0.08)";
             ctx.beginPath();
-            ctx.ellipse(this.x, this.y + 40, 55, 15, 0, 0, Math.PI*2);
+            ctx.ellipse(this.x, this.y + 40, 55, 15, 0, 0, Math.PI * 2);
             ctx.fill();
 
             // Tronco de madeira (Stump Body with flared roots)
             ctx.fillStyle = "#a17c66"; // warm tree bark color
             ctx.strokeStyle = "#3d2f26";
             ctx.lineWidth = 2.5;
-            
+
             ctx.beginPath();
             ctx.moveTo(this.x - 45, this.y + 40); // Root left
             ctx.bezierCurveTo(this.x - 35, this.y + 20, this.x - 25, this.y - 20, this.x - 25, this.y - 20); // left trunk wall
@@ -177,10 +205,10 @@ export class Structure {
             // Textura dos anéis de madeira no topo plano (Y = -20)
             ctx.strokeStyle = "#725643";
             ctx.beginPath();
-            ctx.ellipse(this.x, this.y - 20, 22, 5, 0, 0, Math.PI*2);
+            ctx.ellipse(this.x, this.y - 20, 22, 5, 0, 0, Math.PI * 2);
             ctx.stroke();
             ctx.beginPath();
-            ctx.ellipse(this.x, this.y - 20, 12, 3, 0, 0, Math.PI*2);
+            ctx.ellipse(this.x, this.y - 20, 12, 3, 0, 0, Math.PI * 2);
             ctx.stroke();
 
             // Linhas verticais de casca de árvore
@@ -239,7 +267,7 @@ export class Structure {
             // Pequena janela redonda com luz acesa
             ctx.fillStyle = "#fdf0d5"; // yellow glow
             ctx.beginPath();
-            ctx.arc(this.x, this.y - 5, 8, 0, Math.PI*2);
+            ctx.arc(this.x, this.y - 5, 8, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
 
@@ -248,7 +276,7 @@ export class Structure {
             ctx.moveTo(this.x - 8, this.y - 5); ctx.lineTo(this.x + 8, this.y - 5);
             ctx.moveTo(this.x, this.y - 13); ctx.lineTo(this.x, this.y + 3);
             ctx.stroke();
-        } 
+        }
         else if (this.tipo === "arvore") {
             // REDESENHO: Árvore Orgânica Retorcida Solarpunk
 
@@ -275,7 +303,7 @@ export class Structure {
 
             // Folhagem / Copa (Vários círculos de folhas sobrepostos para profundidade)
             ctx.fillStyle = "#2a9d8f";
-            
+
             const copas = [
                 { cx: this.x - 30, cy: this.y - 75, r: 42 },
                 { cx: this.x + 25, cy: this.y - 85, r: 52 },
@@ -284,11 +312,11 @@ export class Structure {
 
             copas.forEach(c => {
                 ctx.beginPath();
-                ctx.arc(c.cx, c.cy, c.r, 0, Math.PI*2);
+                ctx.arc(c.cx, c.cy, c.r, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.stroke();
             });
-            
+
             // Balanço
             ctx.save();
             ctx.translate(this.x + 52, this.y - 10);
@@ -306,40 +334,53 @@ export class Structure {
             ctx.strokeStyle = "#2b1f1d";
             ctx.lineWidth = 8;
             ctx.beginPath();
-            ctx.arc(0, 62, 14, 0, Math.PI*2);
+            ctx.arc(0, 62, 14, 0, Math.PI * 2);
             ctx.stroke();
 
             // Detalhe interno do pneu (buraco com contorno)
             ctx.strokeStyle = "#3d2f26";
             ctx.lineWidth = 2.5;
             ctx.beginPath();
-            ctx.arc(0, 62, 18, 0, Math.PI*2);
+            ctx.arc(0, 62, 18, 0, Math.PI * 2);
             ctx.stroke();
             ctx.beginPath();
-            ctx.arc(0, 62, 10, 0, Math.PI*2);
+            ctx.arc(0, 62, 10, 0, Math.PI * 2);
             ctx.stroke();
-            
-            if (player.noPneu) {
-                // Desenha a gota sentada no balanço
-                ctx.fillStyle = player.cor;
-                ctx.beginPath();
-                renderizarGeometriaGota(ctx, 0, 65, player.raio, player.morfologia);
-                ctx.fill();
-                ctx.strokeStyle = "#3d2f26";
-                ctx.lineWidth = 2.5;
-                ctx.stroke();
-                
-                let olhoY = 65 - 18;
-                if(player.morfologia === "longa") olhoY = 65 - 22;
-                if(player.morfologia === "gorda") olhoY = 65 - 14;
 
-                ctx.fillStyle = "#1e1b1a";
-                ctx.beginPath();
-                ctx.arc(-6, olhoY, 3, 0, Math.PI*2);
-                ctx.arc(6, olhoY, 3, 0, Math.PI*2);
-                ctx.fill();
-                
-                renderizarChapeuGenerico(ctx, 0, 65, player.chapeuEquipado, player.morfologia);
+            if (player.noPneu) {
+                // Desenha o Jabuli no balanço usando a sprite
+                let spriteObj = obterSpriteTintada(player.nomePreset, player.cor);
+                if (!spriteObj) {
+                    spriteObj = obterSprite("Jabuli Clássico");
+                }
+                if (spriteObj && spriteObj.image) {
+                    const config = spriteObj.config;
+                    const sx = config.sx !== undefined ? config.sx : (config.larguraTotalImagem - config.larguraJabuli) / 2;
+                    const sy = config.sy !== undefined ? config.sy : (config.alturaTotalImagem - config.alturaJabuli) / 2;
+                    const sw = config.larguraJabuli;
+                    const sh = config.alturaJabuli;
+
+                    const aspect = sw / sh;
+                    let dh = 58;
+                    let dw = dh * aspect;
+                    if (player.morfologia === "longa") {
+                        dh = 72;
+                        dw = dh * aspect * 0.7;
+                    } else if (player.morfologia === "gorda") {
+                        dh = 48;
+                        dw = dh * aspect * 1.3;
+                    }
+
+                    ctx.save();
+                    if (!player.facingRight) {
+                        ctx.scale(-1, 1);
+                    }
+                    if (!player.nomePreset) {
+                        ctx.filter = "grayscale(100%) opacity(60%)";
+                    }
+                    ctx.drawImage(spriteObj.image, sx, sy, sw, sh, -dw / 2, 65 - dh, dw, dh);
+                    ctx.restore();
+                }
 
                 // Ajusta posições da entidade relativas ao mundo para desenho do balão de fala
                 player.x = this.x + 52 + Math.sin(anguloBalanco) * 62;
@@ -351,14 +392,16 @@ export class Structure {
             const t = Date.now() / 1000;
 
             // Sombra do conjunto (losango suave)
-            ctx.fillStyle = "rgba(0,0,0,0.08)";
-            ctx.beginPath();
-            ctx.moveTo(this.x, this.y + 25);
-            ctx.lineTo(this.x + 70, this.y + 45);
-            ctx.lineTo(this.x, this.y + 65);
-            ctx.lineTo(this.x - 70, this.y + 45);
-            ctx.closePath();
-            ctx.fill();
+            if (!isShadow) {
+                ctx.fillStyle = "rgba(0,0,0,0.08)";
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y + 25);
+                ctx.lineTo(this.x + 70, this.y + 45);
+                ctx.lineTo(this.x, this.y + 65);
+                ctx.lineTo(this.x - 70, this.y + 45);
+                ctx.closePath();
+                ctx.fill();
+            }
 
             // Base de Metal - Face de Baixo da Extrusão
             ctx.fillStyle = "#7ca092";
@@ -414,46 +457,48 @@ export class Structure {
             ctx.stroke();
 
             // Tela Holográfica Isométrica Flutuante (losango brilhante inclinado)
-            const orbY = this.y - 65 + Math.sin(t * 1.5) * 4;
-            ctx.save();
-            ctx.translate(this.x, orbY);
-            
-            // Brilho holográfico de fundo
-            const glowGrd = ctx.createRadialGradient(0, 0, 0, 0, 0, 32);
-            glowGrd.addColorStop(0, "rgba(72, 220, 196, 0.6)");
-            glowGrd.addColorStop(1, "rgba(72, 220, 196, 0)");
-            ctx.fillStyle = glowGrd;
-            ctx.beginPath();
-            ctx.arc(0, 0, 32, 0, Math.PI * 2);
-            ctx.fill();
+            if (!isShadow) {
+                const orbY = this.y - 65 + Math.sin(t * 1.5) * 4;
+                ctx.save();
+                ctx.translate(this.x, orbY);
 
-            // Moldura holográfica (Losango inclinado)
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
-            ctx.fillStyle = "rgba(72, 220, 196, 0.72)";
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(0, -18);
-            ctx.lineTo(26, -5);
-            ctx.lineTo(0, 8);
-            ctx.lineTo(-26, -5);
-            ctx.closePath();
-            ctx.fill(); ctx.stroke();
+                // Brilho holográfico de fundo
+                const glowGrd = ctx.createRadialGradient(0, 0, 0, 0, 0, 32);
+                glowGrd.addColorStop(0, "rgba(72, 220, 196, 0.6)");
+                glowGrd.addColorStop(1, "rgba(72, 220, 196, 0)");
+                ctx.fillStyle = glowGrd;
+                ctx.beginPath();
+                ctx.arc(0, 0, 32, 0, Math.PI * 2);
+                ctx.fill();
 
-            // Símbolo holográfico de carregamento interno (+)
-            ctx.strokeStyle = "#ffffff";
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(-8, -5); ctx.lineTo(8, -5);
-            ctx.moveTo(0, -13); ctx.lineTo(0, 3);
-            ctx.stroke();
+                // Moldura holográfica (Losango inclinado)
+                ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+                ctx.fillStyle = "rgba(72, 220, 196, 0.72)";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(0, -18);
+                ctx.lineTo(26, -5);
+                ctx.lineTo(0, 8);
+                ctx.lineTo(-26, -5);
+                ctx.closePath();
+                ctx.fill(); ctx.stroke();
 
-            ctx.restore();
+                // Símbolo holográfico de carregamento interno (+)
+                ctx.strokeStyle = "#ffffff";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(-8, -5); ctx.lineTo(8, -5);
+                ctx.moveTo(0, -13); ctx.lineTo(0, 3);
+                ctx.stroke();
+
+                ctx.restore();
+            }
 
             // Pequenas plantinhas na base
             [[-38, 38], [38, 38], [-20, 41], [20, 41]].forEach(([dx, dy]) => {
                 ctx.fillStyle = "#2a9d8f";
                 ctx.beginPath();
-                ctx.arc(this.x + dx, this.y + dy, 4, 0, Math.PI*2);
+                ctx.arc(this.x + dx, this.y + dy, 4, 0, Math.PI * 2);
                 ctx.fill();
             });
 
@@ -461,14 +506,16 @@ export class Structure {
             // MESA RÚSTICA ISOMÉTRICA DE ÁLBUM
 
             // Sombra da mesa
-            ctx.fillStyle = "rgba(0,0,0,0.06)";
-            ctx.beginPath();
-            ctx.moveTo(this.x, this.y + 35);
-            ctx.lineTo(this.x + 72, this.y + 46);
-            ctx.lineTo(this.x, this.y + 57);
-            ctx.lineTo(this.x - 72, this.y + 46);
-            ctx.closePath();
-            ctx.fill();
+            if (!isShadow) {
+                ctx.fillStyle = "rgba(0,0,0,0.06)";
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y + 35);
+                ctx.lineTo(this.x + 72, this.y + 46);
+                ctx.lineTo(this.x, this.y + 57);
+                ctx.lineTo(this.x - 72, this.y + 46);
+                ctx.closePath();
+                ctx.fill();
+            }
 
             // Pernas Traseiras/Laterais (Madeira isométrica)
             ctx.strokeStyle = "#3d2f26";
@@ -549,7 +596,7 @@ export class Structure {
 
             // Páginas Abertas (Fundo Creme, isométrico)
             ctx.fillStyle = "#fdf0d5";
-            
+
             // Lado Esquerdo do Livro
             ctx.beginPath();
             ctx.moveTo(-18, -4);
@@ -586,10 +633,12 @@ export class Structure {
         }
 
         // Nome da estrutura
-        ctx.fillStyle = "#3d2f26";
-        ctx.font = "bold 13px sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText(this.nome, this.x, this.y - 95);
+        if (!isShadow) {
+            ctx.fillStyle = "#3d2f26";
+            ctx.font = "bold 13px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(this.nome, this.x, this.y - 95);
+        }
     }
 }
 export const estruturasPadrao = [

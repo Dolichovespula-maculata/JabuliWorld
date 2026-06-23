@@ -1,10 +1,10 @@
-import { obterSpriteTintada } from '../constants.js';
+import { obterSpriteTintada, obterSprite } from '../constants.js';
 
 export function renderizarGeometriaGota(c, x, y, r, tipoMorfologia) {
     if (tipoMorfologia === "longa") {
         c.moveTo(x, y - 56);
         c.bezierCurveTo(x - r + 3, y - 35, x - r + 1, y, x, y);
-        c.bezierCurveTo(x + r - 1, y , x + r - 3, y - 35, x, y - 56);
+        c.bezierCurveTo(x + r - 1, y, x + r - 3, y - 35, x, y - 56);
     } else if (tipoMorfologia === "gorda") {
         c.moveTo(x, y - 36);
         c.bezierCurveTo(x - r - 8, y - 20, x - r - 8, y, x, y);
@@ -17,112 +17,7 @@ export function renderizarGeometriaGota(c, x, y, r, tipoMorfologia) {
 }
 
 export function renderizarChapeuGenerico(c, x, y, chapeu, morfologia) {
-    let alturaFator = 44;
-    if(morfologia === "longa") alturaFator = 54;
-    if(morfologia === "gorda") alturaFator = 34;
-
-    c.strokeStyle = "#3d2f26";
-    c.lineWidth = 2.5;
-
-    if (chapeu === "colombina") {
-        c.fillStyle = "#ffffff"; 
-        c.beginPath(); 
-        c.moveTo(x - 12, y - alturaFator + 2); 
-        c.lineTo(x, y - alturaFator - 22); 
-        c.lineTo(x + 12, y - alturaFator + 2); 
-        c.closePath();
-        c.fill(); 
-        c.stroke();
-
-        c.fillStyle = "#e07a5f"; 
-        c.beginPath(); 
-        c.arc(x, y - alturaFator - 23, 4, 0, Math.PI*2); 
-        c.fill(); 
-        c.stroke();
-    } else if (chapeu === "caboclo") {
-        c.fillStyle = "#7d6b58"; 
-        c.beginPath();
-        c.rect(x - 24, y - alturaFator - 3, 48, 6);
-        c.fill();
-        c.stroke();
-
-        c.fillStyle = "#ffb703"; 
-        c.beginPath();
-        c.rect(x - 14, y - alturaFator - 12, 28, 9);
-        c.fill();
-        c.stroke();
-    } else if (chapeu === "gardachuva") {
-        c.fillStyle = "#5a4a42"; 
-        c.beginPath();
-        c.rect(x - 2, y - alturaFator - 16, 3, 16); 
-        c.fill();
-        c.stroke();
-
-        c.fillStyle = "#e07a5f"; 
-        c.beginPath(); 
-        c.arc(x, y - alturaFator - 16, 20, Math.PI, 0); 
-        c.closePath();
-        c.fill(); 
-        c.stroke();
-
-        c.fillStyle = "#f2cc8f"; 
-        c.beginPath(); 
-        c.arc(x, y - alturaFator - 16, 11, Math.PI, 0); 
-        c.closePath();
-        c.fill(); 
-        c.stroke();
-    } else if (chapeu === "devo") {
-        c.fillStyle = "#e07a5f"; 
-        c.beginPath();
-        c.rect(x - 20, y - alturaFator - 5, 40, 6); 
-        c.rect(x - 16, y - alturaFator - 11, 32, 6); 
-        c.rect(x - 11, y - 17 - alturaFator, 22, 6);
-        c.fill();
-        c.stroke();
-    } else if (chapeu === "darko") {
-        c.fillStyle = "#5a4a42"; 
-        c.beginPath();
-        c.rect(x - 10, y - alturaFator - 16, 5, 18); 
-        c.rect(x + 5, y - alturaFator - 16, 5, 18);
-        c.fill();
-        c.stroke();
-    } else if (chapeu === "durden") {
-        c.fillStyle = "#3d5a4c"; 
-        c.beginPath(); 
-        c.ellipse(x, y - alturaFator - 2, 20, 8, 0, 0, Math.PI*2); 
-        c.fill();
-        c.stroke();
-    } else if (chapeu === "bowie") {
-        c.fillStyle = "#ff5500"; 
-        c.beginPath(); 
-        c.arc(x, y - alturaFator, 16, Math.PI, 0); 
-        c.closePath();
-        c.fill();
-        c.stroke();
-    } else if (chapeu === "cogumelo") {
-        // Stem band (white ring)
-        c.fillStyle = "#f4f1eb";
-        c.beginPath();
-        c.rect(x - 12, y - alturaFator - 3, 24, 8);
-        c.fill(); c.stroke();
-        // Mushroom cap (dome)
-        c.fillStyle = "#c44b2e";
-        c.beginPath();
-        c.arc(x, y - alturaFator - 3, 24, Math.PI, 0);
-        c.closePath(); c.fill(); c.stroke();
-        // Inner color band
-        c.fillStyle = "#e07a5f";
-        c.beginPath();
-        c.arc(x, y - alturaFator - 3, 18, Math.PI, 0);
-        c.closePath(); c.fill();
-        // White spots
-        c.fillStyle = "rgba(255,255,255,0.88)";
-        [[0,-14],[-9,-9],[9,-9],[-14,-4],[14,-4],[0,-3]].forEach(([dx,dy]) => {
-            c.beginPath();
-            c.arc(x+dx, y - alturaFator - 3 + dy, 3.5, 0, Math.PI*2);
-            c.fill();
-        });
-    }
+    // Sistema de chapéus desativado a pedido do usuário.
 }
 
 export class Player {
@@ -146,7 +41,7 @@ export class Player {
         this.walkTime = 0;
     }
 
-    update(input, canvasWidth, canvasHeight) {
+    update(input, canvasWidth, canvasHeight, isInfinite = false) {
         if (this.timerFala > 0) {
             this.timerFala--;
         }
@@ -160,13 +55,19 @@ export class Player {
             return;
         }
 
-        let dx = 0;
-        let dy = 0;
+        // In the 45° rotated iso view WASD maps to diagonal world axes:
+        //  W = screen-up    → world NW: dx -, dy -
+        //  S = screen-down  → world SE: dx +, dy +
+        //  A = screen-left  → world SW: dx -, dy +
+        //  D = screen-right → world NE: dx +, dy -
+        const diag = 0.7071067811865476; // 1/√2 for normalization
+        const v = this.velocidade;
+        let dx = 0, dy = 0;
 
-        if (input.isPressed('w') || input.isPressed('arrowup')) dy -= this.velocidade;
-        if (input.isPressed('s') || input.isPressed('arrowdown')) dy += this.velocidade;
-        if (input.isPressed('a') || input.isPressed('arrowleft')) dx -= this.velocidade;
-        if (input.isPressed('d') || input.isPressed('arrowright')) dx += this.velocidade;
+        if (input.isPressed('w') || input.isPressed('arrowup'))    { dx -= v * diag; dy -= v * diag; }
+        if (input.isPressed('s') || input.isPressed('arrowdown'))  { dx += v * diag; dy += v * diag; }
+        if (input.isPressed('a') || input.isPressed('arrowleft'))  { dx -= v * diag; dy += v * diag; }
+        if (input.isPressed('d') || input.isPressed('arrowright')) { dx += v * diag; dy -= v * diag; }
 
         this.x += dx;
         this.y += dy;
@@ -188,10 +89,18 @@ export class Player {
         }
 
         // Limitar às bordas
-        if (this.x < 40) this.x = 40;
-        if (this.y < 150) this.y = 150;
-        if (this.x > canvasWidth - 40) this.x = canvasWidth - 40;
-        if (this.y > canvasHeight - 90) this.y = canvasHeight - 90;
+        if (!isInfinite) {
+            if (this.x < 40) this.x = 40;
+            if (this.y < 150) this.y = 150;
+            if (this.x > canvasWidth - 40) this.x = canvasWidth - 40;
+            if (this.y > canvasHeight - 90) this.y = canvasHeight - 90;
+        } else {
+            // Em mapa infinito, limitamos apenas a não atravessar o início (x = 0) pela esquerda se não estiver na ponte
+            const onBridge = (this.x >= 0 && this.x <= 420 && this.y >= 1550 && this.y <= 1650);
+            if (this.x < 40 && !onBridge) {
+                this.x = 40;
+            }
+        }
     }
 
     enviarMensagem(texto) {
@@ -200,99 +109,87 @@ export class Player {
         this.timerFala = 240;
     }
 
-    draw(ctx) {
+    draw(ctx, pontoLuz) {
         if (this.noPneu) {
             this.drawSpeechBubble(ctx);
             return;
+        }
+
+        // 1. Carregar a sprite
+        let spriteObj = obterSpriteTintada(this.nomePreset, this.cor);
+        if (!spriteObj) {
+            spriteObj = obterSprite("Jabuli Clássico");
+        }
+
+        // 2. Extrair dimensões para calcular a sombra e tamanho de desenho
+        let sx = 80, sy = 60, sw = 240, sh = 280;
+        let fatorSombraW = 0.44;
+        let fatorSombraH = 0.10;
+        let offsetSombraY = 2;
+
+        if (spriteObj) {
+            const config = spriteObj.config;
+            sx = config.sx !== undefined ? config.sx : (config.larguraTotalImagem - config.larguraJabuli) / 2;
+            sy = config.sy !== undefined ? config.sy : (config.alturaTotalImagem - config.alturaJabuli) / 2;
+            sw = config.larguraJabuli;
+            sh = config.alturaJabuli;
+
+            if (config.fatorSombraW !== undefined) fatorSombraW = config.fatorSombraW;
+            if (config.fatorSombraH !== undefined) fatorSombraH = config.fatorSombraH;
+            if (config.offsetSombraY !== undefined) offsetSombraY = config.offsetSombraY;
+        }
+
+        const aspect = sw / sh;
+        let dh = 58;
+        let dw = dh * aspect;
+        if (this.morfologia === "longa") {
+            dh = 72;
+            dw = dh * aspect * 0.7;
+        } else if (this.morfologia === "gorda") {
+            dh = 48;
+            dw = dh * aspect * 1.3;
         }
 
         let cutoffY = this.y - 15;
         if (this.morfologia === "longa") cutoffY = this.y - 20;
         if (this.morfologia === "gorda") cutoffY = this.y - 10;
 
-        if (!this.noLago) {
-            // Sombra
-            ctx.fillStyle = "rgba(0, 0, 0, 0.12)";
-            ctx.beginPath();
-            ctx.ellipse(this.x, this.y + 4, this.raio, 8, 0, 0, Math.PI * 2);
-            ctx.fill();
-        } else {
-            // Clip no corpo para parecer submerso
+        // 3. Wobble ao andar
+        let wobbleAngle = 0;
+        if (this.isWalking) {
+            wobbleAngle = Math.sin(this.walkTime) * 0.08;
+        }
+
+        // Clip submerso no lago (sem sombra projetada)
+        if (this.noLago) {
             ctx.save();
             ctx.beginPath();
             ctx.rect(this.x - 50, this.y - 120, 100, 120 + (cutoffY - this.y));
             ctx.clip();
         }
 
-        // Gota / Sprite (Usa obterSpriteTintada para suportar cores/presets dinâmicos)
-        const spriteObj = obterSpriteTintada(this.nomePreset, this.cor);
-        
+        // 4. Desenhar o corpo do personagem
         ctx.save();
         ctx.translate(this.x, this.y);
-
-        let wobbleAngle = 0;
-        if (this.isWalking) {
-            wobbleAngle = Math.sin(this.walkTime) * 0.08;
-        }
         ctx.rotate(wobbleAngle);
 
         if (spriteObj && spriteObj.image) {
-            const config = spriteObj.config;
-            const sx = (config.larguraTotalImagem - config.larguraJabuli) / 2;
-            const sy = (config.alturaTotalImagem - config.alturaJabuli) / 2;
-            const sw = config.larguraJabuli;
-            const sh = config.alturaJabuli;
-            
-            // Distorcer com base na morfologia (mudar o formato/tamanho)
-            let dw = config.larguraDesenho;
-            let dh = config.alturaDesenho;
-            if (this.morfologia === "longa") {
-                dw = 42;
-                dh = 72;
-            } else if (this.morfologia === "gorda") {
-                dw = 62;
-                dh = 48;
-            }
-
             ctx.save();
             if (!this.facingRight) {
                 ctx.scale(-1, 1);
             }
+            if (!this.nomePreset) {
+                ctx.filter = "grayscale(100%) opacity(60%)";
+            }
             ctx.drawImage(spriteObj.image, sx, sy, sw, sh, -dw / 2, -dh, dw, dh);
             ctx.restore();
-        } else {
-            // Desenhar gota vetorial original como fallback (no ponto central 0, 0)
-            ctx.fillStyle = this.cor;
-            ctx.beginPath();
-            renderizarGeometriaGota(ctx, 0, 0, this.raio, this.morfologia);
-            ctx.fill();
-            ctx.strokeStyle = "#3d2f26";
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
-
-            // Olhos
-            let olhoY = -18;
-            if (this.morfologia === "longa") olhoY = -22;
-            if (this.morfologia === "gorda") olhoY = -14;
-
-            ctx.fillStyle = "#1e1b1a";
-            ctx.beginPath();
-            ctx.arc(-6, olhoY, 3, 0, Math.PI * 2);
-            ctx.arc(6, olhoY, 3, 0, Math.PI * 2);
-            ctx.fill();
         }
 
-        // Chapéu (só desenha se tiver preset ativo, acoplado ao balanço em 0,0)
-        if (this.nomePreset) {
-            renderizarChapeuGenerico(ctx, 0, 0, this.chapeuEquipado, this.morfologia);
-        } else {
+        if (!this.nomePreset) {
             // Desenhar cadeado na barriga do Jabuli bloqueado
-            let lockY = -8;
-            if (this.morfologia === "longa") lockY = -12;
-            if (this.morfologia === "gorda") lockY = -6;
-
+            let lockY = -15;
             ctx.fillStyle = "#3d2f26";
-            ctx.font = "14px Arial";
+            ctx.font = "18px Arial";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillText("🔒", 0, lockY);
@@ -305,14 +202,14 @@ export class Player {
 
             // Ondulações concêntricas de água (ripples)
             let t = Date.now() / 300;
-            let rippleScale1 = 1 + (t % 1); 
-            let rippleAlpha1 = 1 - (t % 1); 
-            
+            let rippleScale1 = 1 + (t % 1);
+            let rippleAlpha1 = 1 - (t % 1);
+
             let rippleScale2 = 1 + ((t + 0.5) % 1);
             let rippleAlpha2 = 1 - ((t + 0.5) % 1);
 
             ctx.lineWidth = 2;
-            
+
             // Ripple 1
             ctx.strokeStyle = `rgba(168, 218, 220, ${rippleAlpha1 * 0.8})`;
             ctx.beginPath();
@@ -324,7 +221,7 @@ export class Player {
             ctx.beginPath();
             ctx.ellipse(this.x, cutoffY + 3, this.raio * 0.8 * rippleScale2, 4.5 * rippleScale2, 0, 0, Math.PI * 2);
             ctx.stroke();
-            
+
             // Contorno estático na linha d'água
             ctx.strokeStyle = "#3d2f26";
             ctx.lineWidth = 1.5;
@@ -368,7 +265,7 @@ export class Player {
             ctx.lineTo(balaoX + 6, balaoY + alturaBalao / 2);
             ctx.fill();
             ctx.stroke();
-            
+
             // Cobrir contorno interno
             ctx.beginPath();
             ctx.moveTo(balaoX - 5, balaoY + alturaBalao / 2);

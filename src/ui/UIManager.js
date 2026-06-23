@@ -14,7 +14,10 @@ export class UIManager {
             b4: false, 
             b5: false, 
             b6: false,
-            b7: false
+            b7: false,
+            toytoy: false,
+            jpegfeio: false,
+            onirica: false
         };
         this.bonecosAtivados = {};
 
@@ -102,7 +105,11 @@ export class UIManager {
             { id: "b3", codigo: "BONECO-03", nome: "Jabuli Devo", cor: "#e76f51", morfologia: "normal", chapeu: "devo", criador: "Ryan", insp: "Energia limpa e eletrônica.", unlocked: !!this.inventario["b3"] },
             { id: "b4", codigo: "BONECO-04", nome: "Máscara Frank", cor: "#5a4a42", morfologia: "longa", chapeu: "darko", criador: "Ryan", insp: "Mistérios do agreste.", unlocked: !!this.inventario["b4"] },
             { id: "b5", codigo: "BONECO-05", nome: "Colombina da Sombra", cor: "#ffffff", morfologia: "normal", chapeu: "colombina", criador: "Ryan", insp: "Teatro de rua veneziano.", unlocked: !!this.inventario["b5"] },
-            { id: "b6", codigo: "BONECO-06", nome: "Ziggy Star", cor: "#ff5500", morfologia: "gorda", chapeu: "bowie", criador: "Ryan", insp: "Uma estrela vinda do espaço.", unlocked: !!this.inventario["b6"] }
+            { id: "b6", codigo: "BONECO-06", nome: "Ziggy Star", cor: "#ff5500", morfologia: "gorda", chapeu: "bowie", criador: "Ryan", insp: "Uma estrela vinda do espaço.", unlocked: !!this.inventario["b6"] },
+            { id: "b7", codigo: "BONECO-07", nome: "Jabuli Cogumelo", cor: "#c44b2e", morfologia: "gorda", chapeu: "cogumelo", criador: "Ryan", insp: "Nascido das profundezas do bosque encantado. Fala com os esporos.", unlocked: !!this.inventario["b7"] },
+            { id: "toytoy", codigo: "TOYTOY", nome: "EBAtoytoy", cor: "#4cc9f0", morfologia: "normal", chapeu: null, criador: "Ryan", insp: "Brinquedo e diversão pura.", unlocked: !!this.inventario["toytoy"] },
+            { id: "jpegfeio", codigo: "JPEGFEIO", nome: "EBAjpegfeio", cor: "#8ac926", morfologia: "longa", chapeu: null, criador: "Ryan", insp: "Compactado e cheio de artefatos.", unlocked: !!this.inventario["jpegfeio"] },
+            { id: "onirica", codigo: "ONIRICA", nome: "EBAonirica", cor: "#ff99c8", morfologia: "gorda", chapeu: null, criador: "Ryan", insp: "Nascido dos sonhos mais profundos.", unlocked: !!this.inventario["onirica"] }
         ];
 
         colecao.forEach(selo => {
@@ -138,20 +145,20 @@ export class UIManager {
                         const spriteObj = obterSpriteTintada(selo.nome, selo.cor);
                         if (spriteObj) {
                             const config = spriteObj.config;
-                            const sx = (config.larguraTotalImagem - config.larguraJabuli) / 2;
-                            const sy = (config.alturaTotalImagem - config.alturaJabuli) / 2;
+                            const sx = config.sx !== undefined ? config.sx : (config.larguraTotalImagem - config.larguraJabuli) / 2;
+                            const sy = config.sy !== undefined ? config.sy : (config.alturaTotalImagem - config.alturaJabuli) / 2;
                             const sw = config.larguraJabuli;
                             const sh = config.alturaJabuli;
                             
-                            // Distorcer conforme morfologia
-                            let dw = 24;
+                            const aspect = sw / sh;
                             let dh = 28;
+                            let dw = dh * aspect;
                             if (selo.morfologia === "longa") {
-                                dw = 20;
                                 dh = 34;
+                                dw = dh * aspect * 0.7;
                             } else if (selo.morfologia === "gorda") {
-                                dw = 30;
                                 dh = 23;
+                                dw = dh * aspect * 1.3;
                             }
                             
                             ctx.drawImage(spriteObj.image, sx, sy, sw, sh, 20 - dw / 2, 34 - dh, dw, dh);
@@ -163,18 +170,6 @@ export class UIManager {
                                     drawStamp();
                                 };
                             }
-                            
-                            // Fallback vetorial temporário
-                            ctx.fillStyle = selo.cor;
-                            ctx.beginPath();
-                            renderizarGeometriaGota(ctx, 20, 34, 12, selo.morfologia);
-                            ctx.fill();
-
-                            ctx.fillStyle = "#000";
-                            ctx.beginPath();
-                            ctx.arc(16, 24, 1.5, 0, Math.PI * 2);
-                            ctx.arc(24, 24, 1.5, 0, Math.PI * 2);
-                            ctx.fill();
                         }
                     };
                     drawStamp();
@@ -224,31 +219,36 @@ export class UIManager {
             const drawPolaroid = () => {
                 ctx.clearRect(0, 0, 120, 120);
 
-                // Sombra
-                ctx.fillStyle = "rgba(0,0,0,0.04)";
-                ctx.beginPath();
-                ctx.ellipse(60, 100, 24, 6, 0, 0, Math.PI * 2);
-                ctx.fill();
-
                 const spriteObj = obterSpriteTintada(selo.nome, selo.cor);
-                if (spriteObj) {
+                if (spriteObj && spriteObj.image) {
                     const config = spriteObj.config;
-                    const sx = (config.larguraTotalImagem - config.larguraJabuli) / 2;
-                    const sy = (config.alturaTotalImagem - config.alturaJabuli) / 2;
+                    const sx = config.sx !== undefined ? config.sx : (config.larguraTotalImagem - config.larguraJabuli) / 2;
+                    const sy = config.sy !== undefined ? config.sy : (config.alturaTotalImagem - config.alturaJabuli) / 2;
                     const sw = config.larguraJabuli;
                     const sh = config.alturaJabuli;
                     
-                    // Distorcer conforme morfologia
-                    let dw = 60;
+                    const aspect = sw / sh;
                     let dh = 70;
+                    let dw = dh * aspect;
                     if (selo.morfologia === "longa") {
-                        dw = 50;
                         dh = 85;
+                        dw = dh * aspect * 0.7;
                     } else if (selo.morfologia === "gorda") {
-                        dw = 74;
                         dh = 58;
+                        dw = dh * aspect * 1.3;
                     }
+
+                    // 1. Sombra projetada estática
+                    ctx.save();
+                    ctx.translate(60, 95);
+                    ctx.transform(1, 0, -0.3, -0.15, 0, 0);
+                    ctx.save();
+                    ctx.filter = "brightness(0) opacity(0.04)";
+                    ctx.drawImage(spriteObj.image, sx, sy, sw, sh, -dw / 2, -dh, dw, dh);
+                    ctx.restore();
+                    ctx.restore();
                     
+                    // 2. Desenhar corpo
                     ctx.drawImage(spriteObj.image, sx, sy, sw, sh, 60 - dw / 2, 95 - dh, dw, dh);
                     
                     // Chapéu
@@ -261,20 +261,6 @@ export class UIManager {
                             drawPolaroid();
                         };
                     }
-                    
-                    // Fallback vetorial temporário
-                    ctx.fillStyle = selo.cor;
-                    ctx.beginPath();
-                    renderizarGeometriaGota(ctx, 60, 95, 24, selo.morfologia);
-                    ctx.fill();
-
-                    ctx.fillStyle = "#000";
-                    ctx.beginPath();
-                    ctx.arc(54, 76, 2.5, 0, Math.PI * 2);
-                    ctx.arc(66, 76, 2.5, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    renderizarChapeuGenerico(ctx, 60, 95, selo.chapeu, selo.morfologia);
                 }
             };
             drawPolaroid();
@@ -383,33 +369,46 @@ export class UIManager {
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, 60, 60);
 
-            // Sombra
-            ctx.fillStyle = "rgba(0,0,0,0.05)";
-            ctx.beginPath();
-            ctx.ellipse(30, 52, 16, 4, 0, 0, Math.PI * 2);
-            ctx.fill();
+            const spriteObj = obterSpriteTintada(npc.nome, npc.cor);
+            if (spriteObj && spriteObj.image) {
+                const config = spriteObj.config;
+                const sx = config.sx !== undefined ? config.sx : (config.larguraTotalImagem - config.larguraJabuli) / 2;
+                const sy = config.sy !== undefined ? config.sy : (config.alturaTotalImagem - config.alturaJabuli) / 2;
+                const sw = config.larguraJabuli;
+                const sh = config.alturaJabuli;
+                
+                const aspect = sw / sh;
+                let dh = 35;
+                let dw = dh * aspect;
+                if (npc.morfologia === "longa") {
+                    dh = 43;
+                    dw = dh * aspect * 0.7;
+                } else if (npc.morfologia === "gorda") {
+                    dh = 29;
+                    dw = dh * aspect * 1.3;
+                }
 
-            // Gota
-            ctx.fillStyle = npc.cor;
-            ctx.beginPath();
-            renderizarGeometriaGota(ctx, 30, 48, 12, npc.morfologia);
-            ctx.fill();
-            ctx.strokeStyle = "#3d2f26";
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-
-            // Olhos
-            let olhoY = 48 - 10;
-            if (npc.morfologia === "longa") olhoY = 48 - 12;
-            if (npc.morfologia === "gorda") olhoY = 48 - 8;
-            ctx.fillStyle = "#000";
-            ctx.beginPath();
-            ctx.arc(27, olhoY, 1.5, 0, Math.PI * 2);
-            ctx.arc(33, olhoY, 1.5, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Chapéu
-            renderizarChapeuGenerico(ctx, 30, 48, npc.chapeu, npc.morfologia);
+                // 1. Sombra projetada estática
+                ctx.save();
+                ctx.translate(30, 48);
+                ctx.transform(1, 0, -0.3, -0.15, 0, 0);
+                ctx.save();
+                ctx.filter = "brightness(0) opacity(0.06)";
+                ctx.drawImage(spriteObj.image, sx, sy, sw, sh, -dw / 2, -dh, dw, dh);
+                ctx.restore();
+                ctx.restore();
+                
+                // 2. Desenhar corpo
+                ctx.drawImage(spriteObj.image, sx, sy, sw, sh, 30 - dw / 2, 48 - dh, dw, dh);
+            } else {
+                // Se a imagem base ainda não carregou, adicionamos onload nela para redesenhar
+                const baseSprite = obterSprite(npc.nome) || obterSprite("Jabuli Clássico");
+                if (baseSprite && baseSprite.image) {
+                    baseSprite.image.onload = () => {
+                        this.desenharIconeDialogoLore(npc);
+                    };
+                }
+            }
         }
     }
 
